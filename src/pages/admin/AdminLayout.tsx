@@ -6,6 +6,7 @@ import {
   Cpu,
   FolderKanban,
   Images,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { to: "/admin/technologies", end: false, icon: Cpu, label: "Technologies" },
   { to: "/admin/testimonials", end: false, icon: Quote, label: "Testimonials" },
   { to: "/admin/profile", end: false, icon: UserRound, label: "Profile" },
+  { to: "/admin/account", end: false, icon: KeyRound, label: "Account" },
 ] as const;
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>

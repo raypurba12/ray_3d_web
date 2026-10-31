@@ -2,9 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
-  readonly VITE_EMAILJS_SERVICE_ID?: string;
-  readonly VITE_EMAILJS_TEMPLATE_ID?: string;
-  readonly VITE_EMAILJS_ACCESS_TOKEN?: string;
+  readonly VITE_SITE_URL?: string;
+  readonly VITE_CONTACT_EMAIL?: string;
 }
 
 interface ImportMeta {

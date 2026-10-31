@@ -14,11 +14,12 @@ import { SectionWrapper } from "../../hoc";
 import { fadeIn } from "../../utils/motion";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
+import { AmbientGeometryCanvas } from "../canvas";
 import { Header } from "../atoms/Header";
 
 const About = () => {
   const [time, setTime] = useState("");
-  const { profile } = usePortfolioContent();
+  const { profile, technologies } = usePortfolioContent();
 
   const initials =
     (profile.name || "Ray Purba")
@@ -48,6 +49,13 @@ const About = () => {
 
   return (
     <>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
+      >
+        <AmbientGeometryCanvas />
+      </div>
+
       <Header useMotion={true} {...config.sections.about} />
 
       <motion.p
@@ -162,8 +170,8 @@ const About = () => {
               <span className="text-acid font-bold">60 FPS</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
-              <span className="text-white/60">Bundle Overhead</span>
-              <span className="text-white font-bold">&lt; 150 KB gzip</span>
+              <span className="text-white/60">Accessibility</span>
+              <span className="text-white font-bold">Keyboard Ready</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-white/[0.03] border border-white/5">
               <span className="text-white/60">Type Safety</span>
@@ -250,31 +258,26 @@ const About = () => {
           </div>
 
           <div className="flex flex-wrap gap-2 mt-5">
-            {[
-              { name: "React 18", desc: "UI Library with Concurrent Features" },
-              { name: "TypeScript", desc: "Strict Type Safety & IntelliSense" },
-              { name: "Three.js", desc: "WebGL 3D Graphics Library" },
-              { name: "@react-three/fiber", desc: "React Renderer for Three.js" },
-              { name: "WebGL Shaders", desc: "Custom GLSL Fragment & Vertex" },
-              { name: "Framer Motion", desc: "Physics-Based Animation" },
-              { name: "TailwindCSS", desc: "Utility-First CSS Framework" },
-              { name: "Node.js", desc: "Backend Runtime Environment" },
-              { name: "Vite", desc: "Fast Build Tool & Dev Server" },
-              { name: "Git / CI/CD", desc: "Version Control & Automation" },
-              { name: "Figma", desc: "Interface Design & Prototyping" },
-              { name: "Docker", desc: "Containerization Platform" },
-            ].map((tech) => (
-              <span
-                key={tech.name}
-                className="group relative px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 hover:border-acid/50 hover:bg-white/[0.08] font-mono text-xs text-white/90 transition-all cursor-default"
-                title={tech.desc}
-              >
-                {tech.name}
-                <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/95 border border-acid/30 backdrop-blur-sm text-[10px] text-white/90 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200">
-                  {tech.desc}
+            {technologies.length > 0 ? (
+              technologies.map((tech) => (
+                <span
+                  key={tech.name}
+                  className="group relative px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 hover:border-acid/50 hover:bg-white/[0.08] font-mono text-xs text-white/90 transition-all cursor-default"
+                  title={tech.category}
+                >
+                  {tech.name}
+                  {tech.category && (
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-black/95 border border-acid/30 backdrop-blur-sm text-[10px] text-white/90 whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200">
+                      {tech.category}
+                    </span>
+                  )}
                 </span>
+              ))
+            ) : (
+              <span className="font-mono text-xs text-white/40">
+                The tech ecosystem will appear here once published from the CMS.
               </span>
-            ))}
+            )}
           </div>
         </motion.div>
 

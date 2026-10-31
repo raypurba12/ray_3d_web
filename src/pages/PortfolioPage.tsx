@@ -15,7 +15,9 @@ import {
   StarsCanvas,
   CommandMenu,
 } from "../components";
+import { DeferredCanvas } from "../components/canvas";
 import { CustomCursor } from "../components/layout/CustomCursor";
+import ContentStatus from "../components/system/ContentStatus";
 import { config } from "../constants/config";
 import { ContentProvider } from "../features/portfolio/ContentProvider";
 import { usePortfolioContent } from "../features/portfolio/content-context";
@@ -136,6 +138,8 @@ const PortfolioPage = () => {
           onClose={() => setIsCommandOpen(false)}
         />
 
+        <ContentStatus />
+
         {/* Sections */}
         <Hero />
         <About />
@@ -148,7 +152,12 @@ const PortfolioPage = () => {
         {/* Contact & Ambient Stars */}
         <div className="relative z-0">
           <Contact />
-          <StarsCanvas />
+          <DeferredCanvas
+            className="pointer-events-none absolute inset-0 z-[-1]"
+            rootMargin="200px"
+          >
+            <StarsCanvas />
+          </DeferredCanvas>
         </div>
 
         {/* Minimalist Engineering Footer */}

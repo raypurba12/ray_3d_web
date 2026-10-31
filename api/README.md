@@ -20,21 +20,22 @@ REST API untuk portfolio `raypurba-3d`, dibangun dengan Express 5, TypeScript, P
 ```powershell
 cd d:\FORTOFOLIO\raypurba-3d\api
 npm install
-copy .env.example .env   # lalu sesuaikan DATABASE_URL
+copy .env.example .env   # isi DATABASE_URL, JWT secrets, ADMIN_EMAIL, ADMIN_PASSWORD
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
 npm run dev
 ```
 
-Server berjalan di `http://localhost:5000`.
+Server berjalan di `http://localhost:5000`. Health check: `GET /api/health`.
 
-### Default Admin (hasil seed)
+### Akun admin (hasil seed)
 
-- Email: `admin@raypurba.com`
-- Password: `admin123`
-
-> Ganti password/secret sebelum deploy produksi.
+Seed membaca `ADMIN_EMAIL` dan `ADMIN_PASSWORD` dari environment. Di produksi
+keduanya wajib diisi; password minimal 12 karakter dan harus memadukan minimal
+3 dari 4 kategori (huruf kecil, huruf besar, angka, simbol). Tidak ada password
+default di kode maupun dokumentasi. Ganti juga `JWT_SECRET` dan
+`JWT_REFRESH_SECRET` sebelum deploy.
 
 ## Scripts
 
@@ -56,10 +57,15 @@ Server berjalan di `http://localhost:5000`.
 | `CLIENT_URL` | `http://localhost:5173` | Whitelist CORS, pisahkan dengan koma jika lebih dari satu |
 | `DATABASE_URL` | `mysql://root:@localhost:3306/portfolio_cms` | Koneksi MySQL |
 | `JWT_SECRET` / `JWT_REFRESH_SECRET` | random 32+ chars | Wajib diisi, tanpa fallback |
-| `JWT_EXPIRE` / `JWT_REFRESH_EXPIRE` | `7d` / `30d` | Masa berlaku token |
+| `JWT_EXPIRE` / `JWT_REFRESH_EXPIRE` | `15m` / `30d` | Masa berlaku token |
 | `MAX_FILE_SIZE` | `5242880` | Batas upload (byte) |
-| `UPLOAD_DIR` | `uploads` | Folder lokal untuk file upload |
+| `UPLOAD_DIR` | `uploads` | Folder lokal untuk file upload; gunakan path absolut di produksi |
 | `CLOUDINARY_*` | — | Opsional; jika lengkap, upload disimpan ke Cloudinary |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Kredensial admin untuk `prisma:seed`; wajib di produksi |
+
+Validasi environment berjalan saat boot: nilai lemah, origin `localhost` di
+produksi, atau konfigurasi Cloudinary setengah-setengah akan menggagalkan
+startup.
 
 ## API Endpoints
 
@@ -68,17 +74,21 @@ Endpoint **protected** memerlukan header `Authorization: Bearer <accessToken>`.
 
 ### Health
 
-| Method | Endpoint | Akses |
+| Method | Endpoint | Keterangan |
 | :--- | :--- | :--- |
-| GET | `/api/health` | Public |
+| GET | `/api/health/live` | Proses hidup (tanpa DB) |
+| GET | `/api/health` | Cek `SELECT 1`; 503 bila DB mati |
+| GET | `/api/health/ready` | Sama dengan `/api/health` untuk readiness probe |
 
 ### Auth
 
 | Method | Endpoint | Akses | Keterangan |
 | :--- | :--- | :--- | :--- |
 | POST | `/api/auth/login` | Public (rate limited) | `{ email, password }` |
-| POST | `/api/auth/register` | Protected (ADMIN/SUPER_ADMIN) | `{ email, password, name }` |
+| POST | `/api/auth/register` | SUPER_ADMIN | `{ email, password, name }` |
 | POST | `/api/auth/refresh` | Public | `{ refreshToken }`, token dirotasi |
+| POST | `/api/auth/logout` | Protected | `{ refreshToken }`, sesi dicabut |
+| PUT | `/api/auth/password` | Protected | `{ currentPassword, newPassword }` |
 | GET | `/api/auth/me` | Protected | Data user dari database |
 
 ### Projects
@@ -147,7 +157,11 @@ Body: `name`, `role`, `company`, `content`, `avatar?`, `rating?` (1–5), `featu
 | POST | `/api/upload/multiple` | Protected | `files` (maks. 10) |
 | DELETE | `/api/upload/:filename` | Protected | — |
 
-Tipe yang diterima: JPEG, PNG, WebP, GIF (SVG sengaja ditolak untuk mencegah stored XSS). Ukuran maksimum mengikuti `MAX_FILE_SIZE` (default 5MB). File lokal disajikan di `/uploads/<filename>`.
+Tipe yang diterima: JPEG, PNG, WebP, GIF, dan PDF (SVG sengaja ditolak untuk
+mencegah stored XSS). Isi file diverifikasi lewat magic bytes dan harus cocok
+dengan MIME yang diklaim. Ukuran maksimum mengikuti `MAX_FILE_SIZE` (default
+5MB), maksimal 10 file per request, dan endpoint upload dibatasi 40 request/15
+menit per user. File lokal disajikan di `/uploads/<filename>`.
 
 ## Data Conventions
 
@@ -184,12 +198,25 @@ api/
 ## Security
 
 - Password di-hash bcrypt (12 rounds); password tidak pernah dikembalikan API.
-- JWT access + refresh; secret wajib di-set via environment.
+- Access token 15 menit; refresh token 30 hari dan **dirotasi** setiap dipakai.
+  Reuse token lama di luar jendela 10 detik mencabut seluruh family token.
+- `logout` mencabut refresh session; ganti password menaikkan `tokenVersion`
+  sehingga semua access token lama ditolak, lalu mencabut semua refresh session.
+- Registrasi admin hanya untuk `SUPER_ADMIN`.
 - Rate limit endpoint auth: login 10 req/15 menit, register 20 req/jam per IP.
 - Validasi semua body dengan Zod; error validasi mengembalikan detail field.
 - CORS whitelist dari `CLIENT_URL` (mendukung beberapa origin dipisah koma).
+- Helmet + request logging (pino) dengan request id; header `Authorization`
+  diredaksi dari log.
 - Prisma mencegah SQL injection; error 500 tidak membocorkan detail internal.
-- Upload dibatasi tipe & ukuran; nama file dibuat acak oleh server.
+- Upload divalidasi dengan magic bytes, dibatasi tipe/ukuran/jumlah, dan nama
+  file dibuat acak oleh server.
+- Health check DB mengembalikan 503 saat MySQL tidak tersedia.
+
+## Deploy
+
+Produksi memakai Domainesia cPanel (Node.js App + MySQL). Ikuti
+[`../docs/DEPLOY_CPANEL.md`](../docs/DEPLOY_CPANEL.md).
 
 ## Catatan Toolchain
 

@@ -1,6 +1,6 @@
 import { MousePointer } from "lucide-react";
 
-import { TechCanvas } from "../canvas";
+import { DeferredCanvas, TechCanvas } from "../canvas";
 import { SectionWrapper } from "../../hoc";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
@@ -9,7 +9,7 @@ import { Header } from "../atoms/Header";
 
 const Tech = () => {
   const finePointer = useFinePointer();
-  const { technologies } = usePortfolioContent();
+  const { technologies, status } = usePortfolioContent();
 
   return (
     <>
@@ -29,13 +29,18 @@ const Tech = () => {
       </div>
 
       {technologies.length > 0 ? (
-        <div className="mt-10 h-[380px] w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] sm:h-[460px] lg:h-[520px]">
+        <DeferredCanvas
+          className="mt-10 h-[380px] w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] sm:h-[460px] lg:h-[520px]"
+          skipWhenReducedMotion={false}
+        >
           <TechCanvas technologies={technologies} />
-        </div>
+        </DeferredCanvas>
       ) : (
         <div className="mt-10 flex h-[220px] w-full items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.015] px-6 text-center">
           <p className="max-w-md font-mono text-xs uppercase tracking-[0.2em] text-white/40">
-            The tech stack is being updated. Check back soon.
+            {status === "loading"
+              ? "Syncing tech stack…"
+              : "The tech stack is being updated. Check back soon."}
           </p>
         </div>
       )}

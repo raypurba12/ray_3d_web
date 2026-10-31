@@ -28,6 +28,14 @@ const referrerSource = (referrer: string | null) => {
   }
 };
 
+type CountRow = { count: bigint };
+type DailyRow = { date: string; views: bigint; visitors: bigint };
+type DailyDownloadRow = { date: string; count: bigint };
+type ReferrerRow = { referrer: string | null; count: bigint };
+
+const toNumber = (value: bigint | number | null | undefined) =>
+  Number(value ?? 0);
+
 export const trackPageView = (input: TrackPageViewInput) =>
   prisma.pageView.create({
     data: {
@@ -49,68 +57,112 @@ export const summary = async (days: number) => {
   const start = new Date(today.getTime() - (days - 1) * DAY_MS);
   const previousStart = new Date(start.getTime() - days * DAY_MS);
 
-  const [views, downloads] = await Promise.all([
-    prisma.pageView.findMany({
-      where: { createdAt: { gte: previousStart } },
-      select: { createdAt: true, visitorId: true, referrer: true },
-    }),
-    prisma.cvDownload.findMany({
-      where: { createdAt: { gte: previousStart } },
-      select: { createdAt: true, visitorId: true },
-    }),
+  const [
+    currentViews,
+    currentVisitors,
+    previousViews,
+    previousVisitors,
+    currentDownloads,
+    previousDownloads,
+    dailyViews,
+    dailyDownloads,
+    referrers,
+  ] = await Promise.all([
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(*) AS count FROM page_views WHERE createdAt >= ${start}
+    `,
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(DISTINCT visitorId) AS count
+      FROM page_views
+      WHERE createdAt >= ${start}
+    `,
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(*) AS count
+      FROM page_views
+      WHERE createdAt >= ${previousStart} AND createdAt < ${start}
+    `,
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(DISTINCT visitorId) AS count
+      FROM page_views
+      WHERE createdAt >= ${previousStart} AND createdAt < ${start}
+    `,
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(*) AS count FROM cv_downloads WHERE createdAt >= ${start}
+    `,
+    prisma.$queryRaw<CountRow[]>`
+      SELECT COUNT(*) AS count
+      FROM cv_downloads
+      WHERE createdAt >= ${previousStart} AND createdAt < ${start}
+    `,
+    prisma.$queryRaw<DailyRow[]>`
+      SELECT
+        DATE_FORMAT(createdAt, '%Y-%m-%d') AS date,
+        COUNT(*) AS views,
+        COUNT(DISTINCT visitorId) AS visitors
+      FROM page_views
+      WHERE createdAt >= ${start}
+      GROUP BY date
+      ORDER BY date ASC
+    `,
+    prisma.$queryRaw<DailyDownloadRow[]>`
+      SELECT
+        DATE_FORMAT(createdAt, '%Y-%m-%d') AS date,
+        COUNT(*) AS count
+      FROM cv_downloads
+      WHERE createdAt >= ${start}
+      GROUP BY date
+      ORDER BY date ASC
+    `,
+    prisma.$queryRaw<ReferrerRow[]>`
+      SELECT referrer, COUNT(*) AS count
+      FROM page_views
+      WHERE createdAt >= ${start}
+      GROUP BY referrer
+      ORDER BY count DESC
+      LIMIT 50
+    `,
   ]);
 
-  const currentViews = views.filter((view) => view.createdAt >= start);
-  const previousViews = views.filter((view) => view.createdAt < start);
-  const currentDownloads = downloads.filter((item) => item.createdAt >= start);
-  const previousDownloads = downloads.filter((item) => item.createdAt < start);
-
-  const daily = Array.from({ length: days }, (_, index) => ({
-    date: dateKey(new Date(start.getTime() + index * DAY_MS)),
-    views: 0,
-    visitors: new Set<string>(),
-    cvDownloads: 0,
-  }));
+  const daily = Array.from({ length: days }, (_, index) => {
+    const date = dateKey(new Date(start.getTime() + index * DAY_MS));
+    return { date, views: 0, visitors: 0, cvDownloads: 0 };
+  });
   const buckets = new Map(daily.map((bucket) => [bucket.date, bucket]));
 
-  for (const view of currentViews) {
-    const bucket = buckets.get(dateKey(view.createdAt));
+  for (const row of dailyViews) {
+    const bucket = buckets.get(row.date);
     if (!bucket) continue;
-    bucket.views += 1;
-    bucket.visitors.add(view.visitorId);
+    bucket.views = toNumber(row.views);
+    bucket.visitors = toNumber(row.visitors);
   }
 
-  for (const download of currentDownloads) {
-    const bucket = buckets.get(dateKey(download.createdAt));
-    if (bucket) bucket.cvDownloads += 1;
+  for (const row of dailyDownloads) {
+    const bucket = buckets.get(row.date);
+    if (bucket) bucket.cvDownloads = toNumber(row.count);
   }
 
   const referrerCounts = new Map<string, number>();
-  for (const view of currentViews) {
-    const source = referrerSource(view.referrer);
-    referrerCounts.set(source, (referrerCounts.get(source) ?? 0) + 1);
+  for (const row of referrers) {
+    const source = referrerSource(row.referrer);
+    referrerCounts.set(
+      source,
+      (referrerCounts.get(source) ?? 0) + toNumber(row.count)
+    );
   }
-
-  const uniqueVisitors = new Set(currentViews.map((view) => view.visitorId)).size;
 
   return {
     rangeDays: days,
     totals: {
-      pageViews: currentViews.length,
-      uniqueVisitors,
-      cvDownloads: currentDownloads.length,
+      pageViews: toNumber(currentViews[0]?.count),
+      uniqueVisitors: toNumber(currentVisitors[0]?.count),
+      cvDownloads: toNumber(currentDownloads[0]?.count),
     },
     previous: {
-      pageViews: previousViews.length,
-      uniqueVisitors: new Set(previousViews.map((view) => view.visitorId)).size,
-      cvDownloads: previousDownloads.length,
+      pageViews: toNumber(previousViews[0]?.count),
+      uniqueVisitors: toNumber(previousVisitors[0]?.count),
+      cvDownloads: toNumber(previousDownloads[0]?.count),
     },
-    daily: daily.map(({ date, views: viewCount, visitors, cvDownloads }) => ({
-      date,
-      views: viewCount,
-      visitors: visitors.size,
-      cvDownloads,
-    })),
+    daily,
     topReferrers: [...referrerCounts.entries()]
       .map(([source, count]) => ({ source, count }))
       .sort((a, b) => b.count - a.count)

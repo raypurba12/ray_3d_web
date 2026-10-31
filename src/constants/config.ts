@@ -1,4 +1,4 @@
-import { profile } from "./content";
+import { site } from "./site";
 
 type TSection = {
   p: string;
@@ -43,9 +43,9 @@ type TConfig = {
 
 export const config: TConfig = {
   html: {
-    title: "Ray Purba — Creative Developer & 3D Portfolio",
-    fullName: profile.fullName,
-    email: profile.email,
+    title: site.title,
+    fullName: site.name,
+    email: site.contactEmail,
   },
   hero: {
     name: "Ray Purba",

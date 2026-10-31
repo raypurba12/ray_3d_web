@@ -1,7 +1,6 @@
+import { env } from '../config/env';
 import multer from 'multer';
 import { ApiError } from '../utils/errors';
-
-const MAX_FILE_SIZE = Number(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024;
 
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
@@ -13,7 +12,11 @@ const ALLOWED_MIME_TYPES = new Set([
 
 export const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE },
+  limits: {
+    fileSize: env.MAX_FILE_SIZE,
+    files: 10,
+    parts: 30,
+  },
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(new ApiError(400, 'Only JPEG, PNG, WebP, GIF, and PDF files are allowed'));

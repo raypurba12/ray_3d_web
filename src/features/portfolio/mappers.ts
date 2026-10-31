@@ -5,7 +5,6 @@ import {
   git,
   html,
   javascript,
-  meta,
   mongodb,
   nodejs,
   reactjs,
@@ -85,16 +84,21 @@ const resolveTechnologyIcon = (technology: PublicTechnology) => {
   return BUNDLED_TECH_ICONS[normalizeName(technology.name)] ?? logo;
 };
 
+const byOrder = <T extends { order?: number }>(a: T, b: T) =>
+  (a.order ?? 0) - (b.order ?? 0);
+
 export const mapTechnology = (
   technology: PublicTechnology
 ): TTechnology => ({
   name: technology.name,
   icon: resolveTechnologyIcon(technology),
+  order: technology.order,
+  category: technology.category,
 });
 
 export const mapTechnologies = (
   technologies: PublicTechnology[]
-): TTechnology[] => technologies.map(mapTechnology);
+): TTechnology[] => technologies.map(mapTechnology).sort(byOrder);
 
 export const mapProject = (project: PublicProject): TProject => ({
   name: project.title,
@@ -107,6 +111,8 @@ export const mapProject = (project: PublicProject): TProject => ({
   sourceCodeLink: project.githubUrl ?? "",
   liveDemoLink: project.demoUrl ?? undefined,
   metric: project.metric ?? undefined,
+  featured: project.featured,
+  order: project.order,
   images: project.images?.map((image) => ({
     id: image.id,
     image: resolveAssetUrl(image.image),
@@ -115,7 +121,7 @@ export const mapProject = (project: PublicProject): TProject => ({
 });
 
 export const mapProjects = (projects: PublicProject[]): TProject[] =>
-  projects.map(mapProject);
+  projects.map(mapProject).sort(byOrder);
 
 const formatMonth = (value: string) => {
   const date = new Date(value);
@@ -155,15 +161,16 @@ export const mapExperience = (
   companyName: experience.company,
   icon: experience.companyLogo
     ? resolveAssetUrl(experience.companyLogo)
-    : meta,
+    : "",
   iconBg: "#121216",
   date: formatDateRange(experience.startDate, experience.endDate),
   points: toPoints(experience.description),
+  order: experience.order,
 });
 
 export const mapExperiences = (
   experiences: PublicExperience[]
-): TExperience[] => experiences.map(mapExperience);
+): TExperience[] => experiences.map(mapExperience).sort(byOrder);
 
 export const mapTestimonial = (
   testimonial: PublicTestimonial
@@ -173,11 +180,14 @@ export const mapTestimonial = (
   designation: testimonial.role,
   company: testimonial.company,
   image: testimonial.avatar ? resolveAssetUrl(testimonial.avatar) : "",
+  rating: testimonial.rating,
+  featured: testimonial.featured,
+  order: testimonial.order,
 });
 
 export const mapTestimonials = (
   testimonials: PublicTestimonial[]
-): TTestimonial[] => testimonials.map(mapTestimonial);
+): TTestimonial[] => testimonials.map(mapTestimonial).sort(byOrder);
 
 export const mapProfile = (profile: PublicProfile): PortfolioProfile => ({
   name: profile.name,
@@ -197,9 +207,11 @@ export const mapProfile = (profile: PublicProfile): PortfolioProfile => ({
 export const mapGallery = (
   images: PublicGalleryImage[]
 ): TGalleryImage[] =>
-  images.map((image) => ({
-    id: image.id,
-    title: image.title ?? "",
-    image: resolveAssetUrl(image.image),
-    order: image.order,
-  }));
+  images
+    .map((image) => ({
+      id: image.id,
+      title: image.title ?? "",
+      image: resolveAssetUrl(image.image),
+      order: image.order,
+    }))
+    .sort(byOrder);

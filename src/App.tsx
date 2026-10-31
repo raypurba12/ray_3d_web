@@ -1,23 +1,38 @@
+import { lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./features/admin/auth/AuthProvider";
 import { ProtectedRoute } from "./features/admin/auth/ProtectedRoute";
 import PortfolioPage from "./pages/PortfolioPage";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminLoginPage from "./pages/admin/AdminLoginPage";
-import DashboardPage from "./pages/admin/DashboardPage";
-import ExperienceFormPage from "./pages/admin/ExperienceFormPage";
-import ExperiencesListPage from "./pages/admin/ExperiencesListPage";
-import GalleryFormPage from "./pages/admin/GalleryFormPage";
-import GalleryListPage from "./pages/admin/GalleryListPage";
-import MessagesPage from "./pages/admin/MessagesPage";
-import ProfilePage from "./pages/admin/ProfilePage";
-import ProjectFormPage from "./pages/admin/ProjectFormPage";
-import ProjectsListPage from "./pages/admin/ProjectsListPage";
-import TechnologiesListPage from "./pages/admin/TechnologiesListPage";
-import TechnologyFormPage from "./pages/admin/TechnologyFormPage";
-import TestimonialFormPage from "./pages/admin/TestimonialFormPage";
-import TestimonialsListPage from "./pages/admin/TestimonialsListPage";
+
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
+const AccountPage = lazy(() => import("./pages/admin/AccountPage"));
+const DashboardPage = lazy(() => import("./pages/admin/DashboardPage"));
+const ExperienceFormPage = lazy(
+  () => import("./pages/admin/ExperienceFormPage")
+);
+const ExperiencesListPage = lazy(
+  () => import("./pages/admin/ExperiencesListPage")
+);
+const GalleryFormPage = lazy(() => import("./pages/admin/GalleryFormPage"));
+const GalleryListPage = lazy(() => import("./pages/admin/GalleryListPage"));
+const MessagesPage = lazy(() => import("./pages/admin/MessagesPage"));
+const ProfilePage = lazy(() => import("./pages/admin/ProfilePage"));
+const ProjectFormPage = lazy(() => import("./pages/admin/ProjectFormPage"));
+const ProjectsListPage = lazy(() => import("./pages/admin/ProjectsListPage"));
+const TechnologiesListPage = lazy(
+  () => import("./pages/admin/TechnologiesListPage")
+);
+const TechnologyFormPage = lazy(
+  () => import("./pages/admin/TechnologyFormPage")
+);
+const TestimonialFormPage = lazy(
+  () => import("./pages/admin/TestimonialFormPage")
+);
+const TestimonialsListPage = lazy(
+  () => import("./pages/admin/TestimonialsListPage")
+);
 
 const App = () => (
   <AuthProvider>
@@ -59,6 +74,7 @@ const App = () => (
           />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="messages" element={<MessagesPage />} />
+          <Route path="account" element={<AccountPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

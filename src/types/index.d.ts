@@ -9,6 +9,7 @@ export type TExperience = {
   iconBg: string;
   date: string;
   points: string[];
+  order?: number;
 } & Required<Omit<TCommonProps, "name">>;
 
 export type TTestimonial = {
@@ -16,6 +17,9 @@ export type TTestimonial = {
   designation: string;
   company: string;
   image: string;
+  rating?: number;
+  featured?: boolean;
+  order?: number;
 } & Required<Pick<TCommonProps, "name">>;
 
 export type TProjectImage = {
@@ -35,9 +39,14 @@ export type TProject = {
   liveDemoLink?: string;
   metric?: string;
   images?: TProjectImage[];
+  featured?: boolean;
+  order?: number;
 } & Required<Pick<TCommonProps, "name">>;
 
-export type TTechnology = Required<Omit<TCommonProps, "title">>;
+export type TTechnology = Required<Omit<TCommonProps, "title">> & {
+  order?: number;
+  category?: string;
+};
 
 export type TGalleryImage = {
   id: string;

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -99,6 +100,7 @@ const ScreenshotLightbox = ({
         <img
           src={active.image}
           alt={active.caption || "Project screenshot"}
+          decoding="async"
           className="mx-auto max-h-[80vh] w-auto max-w-full rounded-xl border border-white/10 object-contain shadow-2xl"
         />
         <figcaption className="mt-4 text-center font-mono text-xs text-white/50">
@@ -137,17 +139,13 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
   liveDemoLink,
   metric,
   images,
+  featured,
 }) => {
-  const [isHovering, setIsHovering] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const screenshots = images ?? [];
 
   return (
-    <motion.div
-      variants={fadeIn("up", "spring", index * 0.15, 0.75)}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
+    <motion.div variants={fadeIn("up", "spring", index * 0.15, 0.75)}>
       <Tilt
         tiltMaxAngleX={8}
         tiltMaxAngleY={8}
@@ -167,37 +165,32 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
             <img
               src={image}
               alt={name}
-              className={`h-full w-full object-cover object-center transition-all duration-500 ${isHovering ? "scale-110 opacity-0" : "scale-100 opacity-100"
-                }`}
+              loading="lazy"
+              decoding="async"
+              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <div
-              className={`h-full w-full bg-gradient-to-br from-white/[0.08] to-transparent transition-all duration-500 ${isHovering ? "opacity-0" : "opacity-100"}`}
-            />
-          )}
-
-          {/* Video Preview Placeholder (TODO: replace with real video) */}
-          {isHovering && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#121216] via-[#09090b] to-black">
-              <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-acid/30 backdrop-blur-sm">
-                  <span className="h-2 w-2 rounded-full bg-acid animate-pulse" />
-                  <span className="font-mono text-xs text-white/80">Video Preview Coming Soon</span>
-                </div>
-              </div>
-            </div>
+            <div className="h-full w-full bg-gradient-to-br from-white/[0.08] to-transparent" />
           )}
 
           {/* Ambient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#121216] via-transparent to-black/20 pointer-events-none" />
 
-          {/* Metric Badge */}
-          {metric && (
-            <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-[#09090b]/80 border border-white/10 backdrop-blur-md flex items-center gap-1.5 font-mono text-[10px] text-white/90 z-10">
-              <span className="h-1.5 w-1.5 rounded-full bg-acid" />
-              <span>{metric}</span>
-            </div>
-          )}
+          {/* Status Badges */}
+          <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2">
+            {featured && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-acid/40 bg-acid/10 px-3 py-1 font-mono text-[10px] uppercase tracking-wider text-acid backdrop-blur-md">
+                <Sparkles size={11} />
+                Featured
+              </span>
+            )}
+            {metric && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-[#09090b]/80 px-3 py-1 font-mono text-[10px] text-white/90 backdrop-blur-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-acid" />
+                <span>{metric}</span>
+              </span>
+            )}
+          </div>
 
           {/* Action Link Icons */}
           <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
@@ -279,7 +272,7 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
 };
 
 const Works = () => {
-  const { projects } = usePortfolioContent();
+  const { projects, status } = usePortfolioContent();
 
   return (
     <>
@@ -300,6 +293,12 @@ const Works = () => {
           {projects.map((project, index) => (
             <ProjectCard key={`project-${index}`} index={index} {...project} />
           ))}
+        </div>
+      ) : status === "loading" ? (
+        <div className="bento-card mt-12 rounded-2xl p-10 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">
+            Syncing works from the CMS…
+          </p>
         </div>
       ) : (
         <div className="bento-card mt-12 rounded-2xl p-10 text-center">

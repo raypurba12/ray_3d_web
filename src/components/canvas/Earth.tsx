@@ -23,8 +23,8 @@ const EarthCanvas = () => {
       <Canvas
         shadows
         frameloop={active ? "always" : "never"}
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
-        gl={{ preserveDrawingBuffer: true }}
+        dpr={isMobile ? [1, 1.25] : [1, 1.5]}
+        gl={{ antialias: true }}
         camera={{
           fov: 45,
           near: 0.1,

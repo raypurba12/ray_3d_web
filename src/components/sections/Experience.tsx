@@ -128,7 +128,7 @@ const FloatingStar = ({ delay = 0, duration = 3, x = 0, y = 0 }) => {
 const Experience = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [progressValue, setProgressValue] = React.useState(0);
-  const { experiences } = usePortfolioContent();
+  const { experiences, status } = usePortfolioContent();
 
   // Scroll progress for this section
   const { scrollYProgress } = useScroll({
@@ -198,6 +198,12 @@ const Experience = () => {
               <ExperienceCard key={index} {...experience} />
             ))}
           </VerticalTimeline>
+        </div>
+      ) : status === "loading" ? (
+        <div className="bento-card mt-14 rounded-2xl p-10 text-center">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-white/40">
+            Syncing career timeline…
+          </p>
         </div>
       ) : (
         <div className="bento-card mt-14 rounded-2xl p-10 text-center">

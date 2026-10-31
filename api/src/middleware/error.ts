@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
+import { logger } from '../config/logger';
 import { ApiError } from '../utils/errors';
 import { errorResponse } from '../utils/response';
 
@@ -13,7 +14,7 @@ export const notFoundHandler = (req: Request, res: Response) => {
 
 export const errorHandler = (
   err: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
@@ -66,6 +67,14 @@ export const errorHandler = (
     return;
   }
 
-  console.error('Unhandled error:', err);
+  logger.error(
+    {
+      err,
+      reqId: (req as Request & { id?: string }).id,
+      method: req.method,
+      url: req.originalUrl,
+    },
+    'Unhandled request error'
+  );
   res.status(500).json(errorResponse('Internal server error'));
 };

@@ -9,6 +9,8 @@ import type {
 } from "../../types";
 import type { PortfolioProfile } from "./mappers";
 
+export type ContentStatus = "loading" | "ready" | "partial" | "error";
+
 export type PortfolioContent = {
   profile: PortfolioProfile;
   projects: TProject[];
@@ -18,8 +20,14 @@ export type PortfolioContent = {
   gallery: TGalleryImage[];
 };
 
+export type PortfolioContentValue = PortfolioContent & {
+  status: ContentStatus;
+  usingCache: boolean;
+  refresh: () => Promise<void>;
+};
+
 export const PortfolioContentContext =
-  createContext<PortfolioContent | null>(null);
+  createContext<PortfolioContentValue | null>(null);
 
 export const usePortfolioContent = () => {
   const content = useContext(PortfolioContentContext);

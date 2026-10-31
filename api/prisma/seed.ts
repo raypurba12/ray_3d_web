@@ -4,26 +4,48 @@ import { hashPassword } from '../src/utils/password';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Seeding database...');
+const isProduction = process.env.NODE_ENV === 'production';
 
-  // Create admin user
-  const adminPassword = await hashPassword('admin123');
+const readAdminCredentials = () => {
+  const email = process.env.ADMIN_EMAIL?.trim();
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (isProduction && (!email || !password)) {
+    throw new Error(
+      'ADMIN_EMAIL and ADMIN_PASSWORD are required to seed in production.'
+    );
+  }
+
+  if (!email || !password) {
+    throw new Error(
+      'Set ADMIN_EMAIL and ADMIN_PASSWORD before seeding (see .env.example).'
+    );
+  }
+
+  if (password.length < 12) {
+    throw new Error('ADMIN_PASSWORD must be at least 12 characters long.');
+  }
+
+  return { email, password };
+};
+
+async function main() {
+  console.log('Seeding database...');
+
+  const { email, password } = readAdminCredentials();
+  const adminPassword = await hashPassword(password);
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@raypurba.com' },
+    where: { email },
     update: {},
     create: {
-      email: 'admin@raypurba.com',
+      email,
       password: adminPassword,
       name: 'Admin User',
       role: 'SUPER_ADMIN',
     },
   });
-  console.log('✅ Created admin user:', admin.email);
-  console.log('   📧 Email: admin@raypurba.com');
-  console.log('   🔑 Password: admin123');
+  console.log(`Admin user ready: ${admin.email}`);
 
-  // Create profile
   await prisma.profile.upsert({
     where: { id: 'profile' },
     update: {},
@@ -32,39 +54,37 @@ async function main() {
       name: 'Ray Purba',
       tagline: 'Full Stack Developer & 3D Web Specialist',
       bio: 'Passionate developer specializing in creating immersive 3D web experiences with React, Three.js, and modern web technologies.',
-      avatar: '/avatar.jpg',
-      email: 'hello@raypurba.com',
+      avatar: '',
+      email: '',
       location: 'Indonesia',
-      github: 'https://github.com/raypurba',
-      linkedin: 'https://linkedin.com/in/raypurba',
-      twitter: 'https://twitter.com/raypurba',
-      website: 'https://raypurba.com',
+      github: '',
+      linkedin: '',
+      twitter: '',
+      website: '',
     },
   });
-  console.log('✅ Created profile');
+  console.log('Profile record ready');
 
-  // Create technologies
   const technologies = [
-    { name: 'React', icon: '/tech/react.png', category: 'FRONTEND', order: 1 },
-    { name: 'TypeScript', icon: '/tech/typescript.png', category: 'FRONTEND', order: 2 },
-    { name: 'Three.js', icon: '/tech/threejs.svg', category: 'FRONTEND', order: 3 },
-    { name: 'Node.js', icon: '/tech/nodejs.png', category: 'BACKEND', order: 4 },
-    { name: 'Express', icon: '/tech/express.png', category: 'BACKEND', order: 5 },
-    { name: 'MySQL', icon: '/tech/mysql.png', category: 'DATABASE', order: 6 },
-    { name: 'Prisma', icon: '/tech/prisma.png', category: 'BACKEND', order: 7 },
-    { name: 'Tailwind CSS', icon: '/tech/tailwind.png', category: 'FRONTEND', order: 8 },
+    { name: 'React', icon: 'react', category: 'FRONTEND', order: 1 },
+    { name: 'TypeScript', icon: 'typescript', category: 'FRONTEND', order: 2 },
+    { name: 'Three.js', icon: 'threejs', category: 'FRONTEND', order: 3 },
+    { name: 'Node.js', icon: 'nodejs', category: 'BACKEND', order: 4 },
+    { name: 'Express', icon: 'express', category: 'BACKEND', order: 5 },
+    { name: 'MySQL', icon: 'mysql', category: 'DATABASE', order: 6 },
+    { name: 'Prisma', icon: 'prisma', category: 'BACKEND', order: 7 },
+    { name: 'Tailwind CSS', icon: 'tailwind', category: 'FRONTEND', order: 8 },
   ];
 
   for (const tech of technologies) {
     await prisma.technology.upsert({
       where: { name: tech.name },
-      update: {},
+      update: { icon: tech.icon, order: tech.order },
       create: tech,
     });
   }
-  console.log('✅ Created', technologies.length, 'technologies');
+  console.log(`Technologies ready: ${technologies.length}`);
 
-  // Create tags
   const tags = [
     { name: 'Web Development', slug: 'web-dev', color: '#3b82f6' },
     { name: '3D Graphics', slug: '3d-graphics', color: '#10b981' },
@@ -80,14 +100,14 @@ async function main() {
       create: tag,
     });
   }
-  console.log('✅ Created', tags.length, 'tags');
+  console.log(`Tags ready: ${tags.length}`);
 
-  console.log('🎉 Seeding completed!');
+  console.log('Seeding completed.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seeding failed:', e);
+    console.error('Seeding failed:', e instanceof Error ? e.message : e);
     process.exit(1);
   })
   .finally(async () => {

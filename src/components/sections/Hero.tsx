@@ -13,7 +13,7 @@ const Hero = () => {
   return (
     <section
       id="top"
-      className="relative mx-auto min-h-screen w-full flex flex-col justify-between overflow-hidden bg-primary pt-28 pb-12"
+      className="hero-screen relative mx-auto w-full flex flex-col justify-between overflow-hidden bg-primary pt-24 pb-10 sm:pt-28 sm:pb-12"
     >
       {/* Dynamic 3D WebGL Canvas Layer */}
       <Hero3DCanvas
@@ -37,7 +37,7 @@ const Hero = () => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-acid opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-acid"></span>
           </span>
-          <span className="font-mono text-xs text-white/90 font-medium tracking-wide">
+          <span className="font-mono text-[11px] text-white/90 font-medium tracking-wide sm:text-xs">
             Available for new projects & creative roles
           </span>
         </motion.div>
@@ -67,12 +67,12 @@ const Hero = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.25 }}
-          className="flex flex-wrap items-center gap-4 mt-8 pointer-events-auto"
+          className="flex flex-col items-stretch gap-3 mt-8 pointer-events-auto xs:flex-row xs:flex-wrap xs:items-center xs:gap-4"
         >
-          <Magnetic>
+          <Magnetic className="w-full xs:w-auto">
             <a
               href="#work"
-              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-semibold text-sm hover:bg-acid transition-all duration-300 shadow-glow"
+              className="group relative inline-flex w-full xs:w-auto items-center justify-center gap-2 px-6 py-3 rounded-full bg-white text-black font-semibold text-sm hover:bg-acid transition-all duration-300 shadow-glow"
             >
               <span>Explore Works</span>
               <ArrowUpRight
@@ -82,23 +82,23 @@ const Hero = () => {
             </a>
           </Magnetic>
 
-          <Magnetic>
+          <Magnetic className="w-full xs:w-auto">
             <a
               href="#contact"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/30 text-white font-medium text-sm backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.08]"
+              className="inline-flex w-full xs:w-auto items-center justify-center gap-2 px-6 py-3 rounded-full bg-white/[0.05] border border-white/10 hover:border-white/30 text-white font-medium text-sm backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.08]"
             >
               <span>Initiate Contact</span>
             </a>
           </Magnetic>
 
           {profile.resumeUrl && (
-            <Magnetic>
+            <Magnetic className="w-full xs:w-auto">
               <a
                 href={profile.resumeUrl}
                 target="_blank"
                 rel="noreferrer"
                 onClick={() => trackCvDownload()}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/[0.05] border border-white/10 hover:border-acid/60 text-white font-medium text-sm backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.08]"
+                className="inline-flex w-full xs:w-auto items-center justify-center gap-2 px-6 py-3 rounded-full bg-white/[0.05] border border-white/10 hover:border-acid/60 text-white font-medium text-sm backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.08]"
               >
                 <Download size={16} />
                 <span>Download CV</span>
@@ -116,10 +116,13 @@ const Hero = () => {
       </div>
 
       {/* Minimalist Bottom Bar: Interactive Cue & Scroll Indicator */}
-      <div className={`relative z-10 mx-auto max-w-7xl w-full ${styles.paddingX} flex items-center justify-between pointer-events-none mt-8`}>
-        <div className="flex items-center gap-2 text-white/40 font-mono text-xs">
-          <MousePointer size={12} className="text-acid" />
-          <span>Interactive 3D Canvas • Move cursor to interact</span>
+      <div className={`relative z-10 mx-auto max-w-7xl w-full ${styles.paddingX} flex items-center justify-between gap-4 pointer-events-none mt-6 sm:mt-8`}>
+        <div className="flex items-center gap-2 text-white/40 font-mono text-[10px] sm:text-xs">
+          <MousePointer size={12} className="shrink-0 text-acid" />
+          <span>
+            <span className="hidden sm:inline">Interactive 3D Canvas • Move cursor to interact</span>
+            <span className="sm:hidden">Touch & drag to explore the 3D layer</span>
+          </span>
         </div>
 
         <a

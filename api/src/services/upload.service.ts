@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import { fromBuffer } from 'file-type';
 import { getUploadsDir } from '../config/paths';
 import {
   isCloudinaryEnabled,
@@ -16,24 +17,40 @@ const EXTENSION_BY_MIME: Record<string, string> = {
   'application/pdf': '.pdf',
 };
 
+const ALLOWED_MIME_TYPES = new Set(Object.keys(EXTENSION_BY_MIME));
+
 export interface StoredImage {
   path: string;
   filename: string;
   storage: 'local' | 'cloudinary';
 }
 
+const assertFileSignature = async (file: Express.Multer.File) => {
+  const detected = await fromBuffer(file.buffer);
+
+  if (
+    !detected ||
+    !ALLOWED_MIME_TYPES.has(detected.mime) ||
+    detected.mime !== file.mimetype
+  ) {
+    throw new ApiError(
+      400,
+      'File content does not match an allowed image or PDF type'
+    );
+  }
+
+  return detected.mime;
+};
+
 export const storeImage = async (
   file: Express.Multer.File
 ): Promise<StoredImage> => {
-  const extension = EXTENSION_BY_MIME[file.mimetype];
-  if (!extension) {
-    throw new ApiError(400, 'Unsupported image type');
-  }
-
+  const mime = await assertFileSignature(file);
+  const extension = EXTENSION_BY_MIME[mime];
   const filename = `${Date.now()}-${crypto.randomUUID()}${extension}`;
 
   if (isCloudinaryEnabled()) {
-    const isPdf = file.mimetype === 'application/pdf';
+    const isPdf = mime === 'application/pdf';
     const result = await uploadToCloudinary(
       file.buffer,
       isPdf ? filename : filename.replace(/\.[^.]+$/, ''),

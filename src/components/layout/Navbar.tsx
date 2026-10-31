@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { navLinks } from "../../constants";
@@ -14,6 +14,8 @@ const Navbar = () => {
   const [active, setActive] = useState<string | null>("");
   const [toggle, setToggle] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   // Scroll progress indicator
   const { scrollYProgress } = useScroll();
@@ -29,6 +31,33 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!toggle) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setToggle(false);
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (
+        menuRef.current?.contains(target) ||
+        toggleRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setToggle(false);
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [toggle]);
 
   useEffect(() => {
     const sections = Array.from(
@@ -47,7 +76,7 @@ const Navbar = () => {
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, []);
+  }, [gallery.length]);
 
   return (
     <header
@@ -103,24 +132,30 @@ const Navbar = () => {
         {/* Mobile Hamburger Toggle */}
         <div className="flex lg:hidden items-center">
           <button
+            ref={toggleRef}
             type="button"
             onClick={() => setToggle(!toggle)}
             aria-label="Toggle Navigation"
             aria-expanded={toggle}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white hover:text-acid"
+            aria-controls="mobile-navigation"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 border border-white/10 text-white hover:text-acid"
           >
             {toggle ? <X size={20} /> : <Menu size={20} />}
           </button>
 
           {/* Mobile Overlay Menu */}
           {toggle && (
-            <div className="absolute right-6 top-16 z-50 w-56 rounded-2xl bg-[#121216]/95 border border-white/10 backdrop-blur-2xl p-4 shadow-2xl flex flex-col gap-3">
+            <div
+              id="mobile-navigation"
+              ref={menuRef}
+              className="absolute right-6 top-16 z-50 w-60 rounded-2xl bg-[#121216]/95 border border-white/10 backdrop-blur-2xl p-3 shadow-2xl flex flex-col gap-1"
+            >
               {links.map((nav) => (
                 <a
                   key={nav.id}
                   href={`#${nav.id}`}
                   onClick={() => setToggle(false)}
-                  className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition-colors ${active === nav.id
+                  className={`px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-colors ${active === nav.id
                       ? "bg-white/10 text-acid font-semibold"
                       : "text-white/70 hover:text-white hover:bg-white/5"
                     }`}
@@ -132,7 +167,7 @@ const Navbar = () => {
               <a
                 href="#contact"
                 onClick={() => setToggle(false)}
-                className="px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-wider text-center bg-acid text-black font-semibold"
+                className="px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider text-center bg-acid text-black font-semibold"
               >
                 Let's Talk
               </a>

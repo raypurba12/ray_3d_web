@@ -161,6 +161,95 @@ const CrystalCore = () => {
   );
 };
 
+// Small wireframe shards orbiting the crystal at different depths
+const OrbitingShards = ({ count = 7 }: { count?: number }) => {
+  const shards = useMemo(
+    () =>
+      Array.from({ length: count }, (_, index) => ({
+        radius: 2.9 + (index % 3) * 0.45,
+        speed: 0.08 + (index % 4) * 0.02,
+        offset: (index / count) * Math.PI * 2,
+        tilt: (index % 2 === 0 ? 1 : -1) * (0.4 + (index % 3) * 0.2),
+        size: 0.07 + (index % 3) * 0.025,
+        color: index % 3 === 0 ? "#00f5a0" : "#d4ff00",
+        spin: 0.4 + (index % 4) * 0.15,
+      })),
+    [count]
+  );
+
+  const refs = useRef<Array<THREE.Mesh | null>>([]);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+
+    shards.forEach((shard, index) => {
+      const mesh = refs.current[index];
+      if (!mesh) return;
+
+      const angle = shard.offset + t * shard.speed;
+      mesh.position.set(
+        Math.cos(angle) * shard.radius,
+        Math.sin(angle * 1.3) * 0.7 + shard.tilt,
+        Math.sin(angle) * shard.radius * 0.65
+      );
+      mesh.rotation.x = t * shard.spin;
+      mesh.rotation.y = t * shard.spin * 0.7;
+    });
+  });
+
+  return (
+    <group>
+      {shards.map((shard, index) => (
+        <mesh
+          key={index}
+          ref={(node) => {
+            refs.current[index] = node;
+          }}
+          scale={shard.size}
+        >
+          <octahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial
+            color={shard.color}
+            wireframe
+            transparent
+            opacity={0.45}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+};
+
+// Camera drifts with page scroll for a parallax depth effect inside the hero
+const ScrollParallaxRig = ({ enabled = true }: { enabled?: boolean }) => {
+  useFrame((state) => {
+    if (!enabled) return;
+
+    const viewportHeight = window.innerHeight || 1;
+    const progress = Math.min(window.scrollY / viewportHeight, 1);
+    const { x } = state.pointer;
+
+    state.camera.position.y = THREE.MathUtils.lerp(
+      state.camera.position.y,
+      progress * 0.9,
+      0.06
+    );
+    state.camera.position.z = THREE.MathUtils.lerp(
+      state.camera.position.z,
+      5.5 + progress * 1.1,
+      0.06
+    );
+    state.camera.position.x = THREE.MathUtils.lerp(
+      state.camera.position.x,
+      x * 0.12,
+      0.04
+    );
+    state.camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+};
+
 // Orbital rings around the crystal
 const OrbitalRings = () => {
   const ring1Ref = useRef<THREE.Mesh>(null!);
@@ -255,6 +344,8 @@ export const Hero3DCanvas: React.FC<{ identity: LanyardIdentity }> = ({
         <AmbientParticles count={isMobile ? 40 : 80} />
         <CrystalCore />
         <OrbitalRings />
+        <OrbitingShards count={isMobile ? 4 : 7} />
+        <ScrollParallaxRig enabled={!reducedMotion} />
         {showLanyard && (
           <Lanyard anchor={[2.45, 2.65]} identity={identity} />
         )}

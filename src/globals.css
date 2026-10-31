@@ -13,6 +13,8 @@
 
   html {
     scroll-padding-top: var(--nav-offset);
+    -webkit-text-size-adjust: 100%;
+    overflow-x: clip;
   }
 
   * {
@@ -29,6 +31,7 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -73,6 +76,15 @@
   touch-action: pan-y !important;
 }
 
+/* Keep form fields at 16px on phones so iOS does not zoom the page */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Bento & Card Effects */
 .bento-card {
   background: rgba(18, 18, 22, 0.7);
@@ -82,10 +94,18 @@
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bento-card:hover {
-  border-color: rgba(212, 255, 0, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(212, 255, 0, 0.08);
+@media (hover: hover) and (pointer: fine) {
+  .bento-card:hover {
+    border-color: rgba(212, 255, 0, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.8), 0 0 25px -5px rgba(212, 255, 0, 0.08);
+  }
+}
+
+/* Hero fills the small viewport on mobile browsers (address bar aware) */
+.hero-screen {
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
 /* Luxury Gradients */

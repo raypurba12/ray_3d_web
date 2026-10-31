@@ -9,23 +9,52 @@ import type { ApiEnvelope, UploadedAsset } from "../types/admin";
 
 const DEFAULT_API_URL = "http://localhost:5000/api";
 
+const configuredApiUrl = (import.meta.env.VITE_API_URL ?? "").trim();
 export const API_BASE = (
-  import.meta.env.VITE_API_URL ?? DEFAULT_API_URL
+  configuredApiUrl || DEFAULT_API_URL
 ).replace(/\/+$/, "");
-export const API_ORIGIN = new URL(API_BASE).origin;
+
+const resolveOrigin = (value: string): string => {
+  try {
+    const fallbackOrigin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "http://localhost:5000";
+    return new URL(value, fallbackOrigin).origin;
+  } catch {
+    return value;
+  }
+};
+
+export const API_ORIGIN = resolveOrigin(API_BASE);
+
+const GET_TIMEOUT_MS = 8000;
+const MUTATION_TIMEOUT_MS = 20000;
+const UPLOAD_TIMEOUT_MS = 60000;
+
+export type ApiErrorCode = "offline" | "timeout" | "http" | "auth";
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly code: ApiErrorCode;
   readonly issues?: ApiEnvelope<unknown>["errors"];
 
   constructor(
     status: number,
     message: string,
-    issues?: ApiEnvelope<unknown>["errors"]
+    issues?: ApiEnvelope<unknown>["errors"],
+    code?: ApiErrorCode
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code =
+      code ??
+      (status === 401 || status === 403
+        ? "auth"
+        : status === 0
+          ? "offline"
+          : "http");
     this.issues = issues;
   }
 }
@@ -41,9 +70,30 @@ type RequestOptions = {
   body?: unknown;
   auth?: boolean;
   retried?: boolean;
+  timeoutMs?: number;
 };
 
 let refreshPromise: Promise<string> | null = null;
+
+const fetchWithTimeout = async (
+  url: string,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const isAbortError = (error: unknown) =>
+  error instanceof DOMException
+    ? error.name === "AbortError"
+    : (error as { name?: string } | null)?.name === "AbortError";
 
 const refreshAccessToken = (): Promise<string> => {
   const refreshToken = getRefreshToken();
@@ -52,11 +102,15 @@ const refreshAccessToken = (): Promise<string> => {
   }
 
   if (!refreshPromise) {
-    refreshPromise = fetch(`${API_BASE}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
-    })
+    refreshPromise = fetchWithTimeout(
+      `${API_BASE}/auth/refresh`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      },
+      MUTATION_TIMEOUT_MS
+    )
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
           | ApiEnvelope<{ accessToken: string; refreshToken: string }>
@@ -90,7 +144,13 @@ export const request = async <T>(
   path: string,
   options: RequestOptions = {}
 ): Promise<T> => {
-  const { method = "GET", body, auth = true, retried = false } = options;
+  const {
+    method = "GET",
+    body,
+    auth = true,
+    retried = false,
+    timeoutMs,
+  } = options;
 
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -98,18 +158,45 @@ export const request = async <T>(
   const token = getAccessToken();
   if (auth && token) headers.Authorization = `Bearer ${token}`;
 
+  const idempotent = method === "GET";
+  const timeout =
+    timeoutMs ?? (idempotent ? GET_TIMEOUT_MS : MUTATION_TIMEOUT_MS);
+
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-  } catch {
+    response = await fetchWithTimeout(
+      `${API_BASE}${path}`,
+      {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      },
+      timeout
+    );
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new ApiError(
+        0,
+        "Permintaan melebihi batas waktu. Periksa koneksi dan coba lagi.",
+        undefined,
+        "timeout"
+      );
+    }
+
+    if (idempotent && !retried) {
+      return request<T>(path, { ...options, retried: true });
+    }
+
     throw new ApiError(
       0,
-      `Tidak dapat terhubung ke server (${API_ORIGIN}). Pastikan API berjalan.`
+      `Tidak dapat terhubung ke server (${API_ORIGIN}). Pastikan API berjalan.`,
+      undefined,
+      "offline"
     );
+  }
+
+  if (response.status >= 500 && idempotent && !retried) {
+    return request<T>(path, { ...options, retried: true });
   }
 
   const skipRefresh =
@@ -145,6 +232,7 @@ export const uploadFile = (
     const send = (retried: boolean) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${API_BASE}/upload`);
+      xhr.timeout = UPLOAD_TIMEOUT_MS;
 
       const token = getAccessToken();
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -157,6 +245,16 @@ export const uploadFile = (
 
       xhr.onerror = () =>
         reject(new ApiError(0, "Upload gagal. Periksa koneksi ke server."));
+
+      xhr.ontimeout = () =>
+        reject(
+          new ApiError(
+            0,
+            "Upload melebihi batas waktu. Coba lagi dengan koneksi yang lebih stabil.",
+            undefined,
+            "timeout"
+          )
+        );
 
       xhr.onload = async () => {
         let payload: ApiEnvelope<UploadedAsset> | null = null;

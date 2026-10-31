@@ -26,7 +26,7 @@ interface CommandMenuProps {
 export const CommandMenu: React.FC<CommandMenuProps> = ({ isOpen, onClose }) => {
   const { profile, gallery } = usePortfolioContent();
   const contactEmail = profile.email || config.html.email;
-  const resumeUrl = profile.resumeUrl || "/cv-raypurba.pdf";
+  const resumeUrl = profile.resumeUrl;
   const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -65,6 +65,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({ isOpen, onClose }) => 
   };
 
   const copyEmail = () => {
+    if (!contactEmail) return;
     navigator.clipboard.writeText(contactEmail);
     setCopied(true);
     setTimeout(() => {
@@ -120,24 +121,38 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({ isOpen, onClose }) => 
       category: "Navigation",
       perform: () => navigateTo("contact"),
     },
-    {
-      id: "copy-email",
-      name: copied ? "Email Copied to Clipboard!" : `Copy Email (${contactEmail})`,
-      icon: copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} className="text-white/70" />,
-      category: "Action",
-      perform: copyEmail,
-    },
-    {
-      id: "download-cv",
-      name: "Download Resume / CV (PDF)",
-      icon: <FileText size={16} className="text-white/70" />,
-      category: "Action",
-      perform: () => {
-        trackCvDownload();
-        window.open(resumeUrl, "_blank");
-        onClose();
-      },
-    },
+    ...(contactEmail
+      ? [
+          {
+            id: "copy-email",
+            name: copied
+              ? "Email Copied to Clipboard!"
+              : `Copy Email (${contactEmail})`,
+            icon: copied ? (
+              <Check size={16} className="text-emerald-400" />
+            ) : (
+              <Copy size={16} className="text-white/70" />
+            ),
+            category: "Action",
+            perform: copyEmail,
+          },
+        ]
+      : []),
+    ...(resumeUrl
+      ? [
+          {
+            id: "download-cv",
+            name: "Download Resume / CV (PDF)",
+            icon: <FileText size={16} className="text-white/70" />,
+            category: "Action",
+            perform: () => {
+              trackCvDownload();
+              window.open(resumeUrl, "_blank");
+              onClose();
+            },
+          },
+        ]
+      : []),
     {
       id: "scroll-top",
       name: "Return to Top",

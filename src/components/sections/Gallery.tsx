@@ -80,6 +80,7 @@ const GalleryContent = () => {
               src={image.image}
               alt={image.title || `Gallery photo ${index + 1}`}
               loading="lazy"
+              decoding="async"
               className="w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
             <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-4 pt-10">
@@ -136,6 +137,7 @@ const GalleryContent = () => {
                 <img
                   src={activeImage.image}
                   alt={activeImage.title || "Gallery photo"}
+                  decoding="async"
                   className="mx-auto max-h-[80vh] w-auto max-w-full rounded-xl border border-white/10 object-contain shadow-2xl"
                 />
                 <figcaption className="mt-4 text-center font-mono text-xs text-white/50">

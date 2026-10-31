@@ -5,6 +5,7 @@ import { request } from "../../../lib/api";
 import {
   clearSession,
   getAccessToken,
+  getRefreshToken,
   getStoredUser,
   storeSession,
   UNAUTHORIZED_EVENT,
@@ -72,6 +73,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const logout = useCallback(() => {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      void request("/auth/logout", {
+        method: "POST",
+        body: { refreshToken },
+        auth: false,
+      }).catch(() => undefined);
+    }
+
     clearSession();
     setUser(null);
     setStatus("unauthenticated");
