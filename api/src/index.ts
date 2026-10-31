@@ -37,16 +37,22 @@ const start = async () => {
   await connectWithRetry();
   logger.info('Database connected');
 
-  const server = app.listen(listenTarget, () => {
+  const onListen = () => {
     logger.info(
       {
+        host: env.HOST,
         port: listenTarget,
         environment: env.NODE_ENV,
         corsOrigins: env.CLIENT_URL,
       },
       'Server started'
     );
-  });
+  };
+
+  const server =
+    typeof listenTarget === 'number'
+      ? app.listen(listenTarget, env.HOST, onListen)
+      : app.listen(listenTarget, onListen);
 
   registerShutdown(server);
 };

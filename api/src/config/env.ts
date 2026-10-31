@@ -12,6 +12,7 @@ const envSchema = z
       .enum(['development', 'test', 'production'])
       .default('development'),
     PORT: z.preprocess(emptyToUndefined, z.string().default('5000')),
+    HOST: z.preprocess(emptyToUndefined, z.string().default('127.0.0.1')),
     CLIENT_URL: z.string().min(1, 'CLIENT_URL is required'),
     DATABASE_URL: z
       .string()
