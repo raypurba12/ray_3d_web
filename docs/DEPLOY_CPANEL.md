@@ -246,6 +246,7 @@ terpengaruh.
 | Deep link 404 | `mod_rewrite` + fallback `index.html` di `.htaccess` |
 | CORS ditolak | `CLIENT_URL` harus memuat origin persis (tanpa slash) |
 | Prisma error koneksi | `DATABASE_URL`, user DB, izin `ALL PRIVILEGES` |
+| Build berhenti di `rendering chunks` | Ulangi dengan `NODE_OPTIONS=--max-old-space-size=2048 npm run build`; pastikan `dist/assets` terisi sebelum menyalin ke docroot |
 
 ### Limitasi: `url` absolut pada respons upload
 
