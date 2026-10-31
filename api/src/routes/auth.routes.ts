@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
 import { validate } from '../middleware/validate';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
 import {
+  changePasswordSchema,
   loginSchema,
   refreshSchema,
   registerSchema,
@@ -32,7 +33,7 @@ router.post(
 router.post(
   '/register',
   authenticate,
-  requireAdmin,
+  requireRole('SUPER_ADMIN'),
   registerLimiter,
   validate(registerSchema),
   authController.registerController
@@ -41,6 +42,17 @@ router.post(
   '/refresh',
   validate(refreshSchema),
   authController.refreshController
+);
+router.post(
+  '/logout',
+  validate(refreshSchema),
+  authController.logoutController
+);
+router.put(
+  '/password',
+  authenticate,
+  validate(changePasswordSchema),
+  authController.changePasswordController
 );
 router.get('/me', authenticate, authController.getMeController);
 

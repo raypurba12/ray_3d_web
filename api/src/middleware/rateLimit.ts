@@ -5,6 +5,7 @@ interface RateLimitOptions {
   windowMs: number;
   max: number;
   message?: string;
+  keyGenerator?: (req: Request) => string;
 }
 
 interface Bucket {
@@ -15,12 +16,13 @@ interface Bucket {
 const MAX_TRACKED_CLIENTS = 10_000;
 
 export const rateLimit =
-  ({ windowMs, max, message = 'Too many requests' }: RateLimitOptions) => {
+  ({ windowMs, max, message = 'Too many requests', keyGenerator }: RateLimitOptions) => {
     const buckets = new Map<string, Bucket>();
 
     return (req: Request, res: Response, next: NextFunction) => {
       const now = Date.now();
-      const key = req.ip || req.socket.remoteAddress || 'unknown';
+      const key =
+        keyGenerator?.(req) || req.ip || req.socket.remoteAddress || 'unknown';
 
       if (buckets.size > MAX_TRACKED_CLIENTS) {
         for (const [client, bucket] of buckets) {
@@ -37,13 +39,18 @@ export const rateLimit =
       bucket.count += 1;
 
       res.setHeader('RateLimit-Limit', String(max));
-      res.setHeader('RateLimit-Remaining', String(Math.max(0, max - bucket.count)));
+      res.setHeader(
+        'RateLimit-Remaining',
+        String(Math.max(0, max - bucket.count))
+      );
       res.setHeader('RateLimit-Reset', String(Math.ceil(bucket.resetAt / 1000)));
 
       if (bucket.count > max) {
-        res
-          .status(429)
-          .json(errorResponse(message));
+        res.setHeader(
+          'Retry-After',
+          String(Math.ceil((bucket.resetAt - now) / 1000))
+        );
+        res.status(429).json(errorResponse(message));
         return;
       }
 

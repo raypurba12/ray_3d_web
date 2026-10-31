@@ -1,21 +1,34 @@
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
+import { logger } from './logger';
 
-export const isCloudinaryEnabled = (): boolean =>
-  Boolean(
-    process.env.CLOUDINARY_CLOUD_NAME &&
-      process.env.CLOUDINARY_API_KEY &&
-      process.env.CLOUDINARY_API_SECRET
-  );
+const config = () => ({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+export const isCloudinaryEnabled = (): boolean => {
+  const values = Object.values(config()).filter(Boolean);
+  return values.length === 3;
+};
 
 export const configureCloudinary = (): void => {
-  if (!isCloudinaryEnabled()) return;
+  const values = Object.values(config()).filter(Boolean);
 
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
+  if (values.length > 0 && values.length < 3) {
+    throw new Error(
+      'Cloudinary configuration is incomplete: set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET together'
+    );
+  }
+
+  if (isCloudinaryEnabled()) {
+    cloudinary.config({ ...config(), secure: true });
+  }
+
+  logger.info(
+    { storage: isCloudinaryEnabled() ? 'cloudinary' : 'local-disk' },
+    'Upload storage configured'
+  );
 };
 
 export const uploadToCloudinary = (

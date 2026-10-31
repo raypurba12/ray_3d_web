@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -9,15 +10,34 @@ datasource db {
 
 // Admin Users
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // bcrypt hashed
-  name      String
-  role      Role     @default(ADMIN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String           @id @default(cuid())
+  email          String           @unique
+  password       String           // bcrypt hashed
+  name           String
+  role           Role             @default(ADMIN)
+  tokenVersion   Int              @default(0)
+  refreshSessions RefreshSession[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@map("users")
+}
+
+// Rotating refresh-token sessions (one row per issued refresh token)
+model RefreshSession {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  familyId   String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+  @@map("refresh_sessions")
 }
 
 enum Role {
@@ -42,6 +62,7 @@ model Project {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
+  @@index([featured, order])
   @@map("projects")
 }
 
@@ -71,6 +92,7 @@ model Technology {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  @@index([order])
   @@map("technologies")
 }
 
@@ -98,6 +120,7 @@ model Experience {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
+  @@index([order])
   @@map("experiences")
 }
 
@@ -115,6 +138,7 @@ model Testimonial {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([featured, order])
   @@map("testimonials")
 }
 
@@ -141,6 +165,7 @@ model PageView {
 
   @@index([createdAt])
   @@index([visitorId])
+  @@index([createdAt, visitorId])
   @@map("page_views")
 }
 
@@ -162,6 +187,7 @@ model GalleryImage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([order])
   @@map("gallery_images")
 }
 

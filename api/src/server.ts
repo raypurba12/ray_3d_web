@@ -1,6 +1,12 @@
-import 'dotenv/config';
+import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import { pinoHttp } from 'pino-http';
+
+import { corsOrigins, env, isProduction } from './config/env';
+import { logger } from './config/logger';
+import prisma from './config/database';
 
 import authRoutes from './routes/auth.routes';
 import projectsRoutes from './routes/projects.routes';
@@ -17,12 +23,7 @@ import { configureCloudinary } from './config/cloudinary';
 import { ensureUploadsDir } from './config/paths';
 import { errorHandler, notFoundHandler } from './middleware/error';
 import { ApiError } from './utils/errors';
-import { successResponse } from './utils/response';
-
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+import { errorResponse, successResponse } from './utils/response';
 
 const app = express();
 
@@ -30,35 +31,109 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+      const header = req.headers['x-request-id'];
+      const id =
+        typeof header === 'string' && header.trim()
+          ? header
+          : crypto.randomUUID();
+      res.setHeader('x-request-id', id);
+      return id;
+    },
+    autoLogging: {
+      ignore: (req) =>
+        req.url === '/api/health' || req.url === '/api/health/live',
+    },
+  })
+);
+
+app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || corsOrigins.includes(origin)) {
         callback(null, true);
         return;
       }
       callback(new ApiError(403, 'Origin not allowed by CORS'));
     },
-    credentials: true,
   })
 );
+
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 const uploadsDir = ensureUploadsDir();
 app.use(
   '/uploads',
-  express.static(uploadsDir, { maxAge: '7d', index: false })
+  express.static(uploadsDir, {
+    maxAge: '7d',
+    index: false,
+    immutable: false,
+  })
 );
 
-app.get('/api/health', (_req, res) => {
-  res.json(
-    successResponse({
-      status: 'OK',
-      timestamp: new Date().toISOString(),
-      uptime: Math.round(process.uptime()),
-      environment: process.env.NODE_ENV || 'development',
-    })
-  );
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    timer.unref();
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+
+const checkDatabase = async () => {
+  await withTimeout(prisma.$queryRaw`SELECT 1`, 2_000);
+};
+
+const healthPayload = () => ({
+  status: 'ok',
+  db: 'up',
+  timestamp: new Date().toISOString(),
+  uptime: Math.round(process.uptime()),
+  environment: env.NODE_ENV,
+});
+
+app.get('/api/health/live', (_req, res) => {
+  res.json(successResponse({ status: 'ok' }));
+});
+
+app.get('/api/health', async (_req, res) => {
+  try {
+    await checkDatabase();
+    res.json(successResponse(healthPayload()));
+  } catch (error) {
+    logger.error({ err: error }, 'Health check failed');
+    res.status(503).json(
+      errorResponse('Database unavailable', [
+        { db: 'down', timestamp: new Date().toISOString() },
+      ])
+    );
+  }
+});
+
+app.get('/api/health/ready', async (_req, res) => {
+  try {
+    await checkDatabase();
+    res.json(successResponse(healthPayload()));
+  } catch {
+    res.status(503).json(errorResponse('Database unavailable'));
+  }
 });
 
 app.use('/api/auth', authRoutes);
@@ -76,5 +151,12 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 configureCloudinary();
+
+if (!isProduction) {
+  logger.info(
+    { uploadsDir, corsOrigins, nodeEnv: env.NODE_ENV },
+    'API configuration loaded'
+  );
+}
 
 export default app;

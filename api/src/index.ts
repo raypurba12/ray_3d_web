@@ -2,12 +2,14 @@ import 'dotenv/config';
 import type { Server } from 'http';
 import app from './server';
 import prisma from './config/database';
+import { env } from './config/env';
+import { logger } from './config/logger';
 
-const PORT = Number(process.env.PORT) || 5000;
+const listenTarget = /^\d+$/.test(env.PORT) ? Number(env.PORT) : env.PORT;
 
 const registerShutdown = (server: Server) => {
   const shutdown = (signal: string) => {
-    console.log(`\n${signal} received. Shutting down gracefully...`);
+    logger.info({ signal }, 'Shutting down gracefully');
     server.close(() => {
       void prisma.$disconnect().finally(() => process.exit(0));
     });
@@ -18,21 +20,48 @@ const registerShutdown = (server: Server) => {
   process.on('SIGTERM', () => shutdown('SIGTERM'));
 };
 
-const start = async () => {
-  await prisma.$connect();
-  console.log('✅ Database connected');
+const connectWithRetry = async (attempts = 3) => {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await prisma.$connect();
+      return;
+    } catch (error) {
+      logger.error({ err: error, attempt }, 'Database connection failed');
+      if (attempt === attempts) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+    }
+  }
+};
 
-  const server = app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`✅ Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🌐 CORS allowed origins: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+const start = async () => {
+  await connectWithRetry();
+  logger.info('Database connected');
+
+  const server = app.listen(listenTarget, () => {
+    logger.info(
+      {
+        port: listenTarget,
+        environment: env.NODE_ENV,
+        corsOrigins: env.CLIENT_URL,
+      },
+      'Server started'
+    );
   });
 
   registerShutdown(server);
 };
 
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason }, 'Unhandled promise rejection');
+});
+
+process.on('uncaughtException', (error) => {
+  logger.fatal({ err: error }, 'Uncaught exception');
+  process.exit(1);
+});
+
 start().catch(async (error) => {
-  console.error('❌ Failed to start server:', error);
+  logger.fatal({ err: error }, 'Failed to start server');
   await prisma.$disconnect();
   process.exit(1);
 });

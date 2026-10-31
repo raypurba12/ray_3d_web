@@ -20,6 +20,26 @@ export const refreshController = async (req: Request, res: Response) => {
   res.json(successResponse(result, 'Token refreshed'));
 };
 
+export const logoutController = async (req: Request, res: Response) => {
+  await authService.logout(req.body.refreshToken);
+  res.json(successResponse(null, 'Logged out'));
+};
+
+export const changePasswordController = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  const { currentPassword, newPassword } = req.body;
+  await authService.changePassword(
+    req.user!.userId,
+    currentPassword,
+    newPassword
+  );
+  res.json(
+    successResponse(null, 'Password updated. Please sign in again.')
+  );
+};
+
 export const getMeController = async (req: AuthRequest, res: Response) => {
   const user = await authService.getMe(req.user!.userId);
   res.json(successResponse(user));
