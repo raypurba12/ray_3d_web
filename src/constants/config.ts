@@ -1,3 +1,5 @@
+import { profile } from "./content";
+
 type TSection = {
   p: string;
   h2: string;
@@ -33,6 +35,7 @@ type TConfig = {
   sections: {
     about: Required<TSection>;
     experience: TSection;
+    tech: TSection;
     feedbacks: TSection;
     works: Required<TSection>;
   };
@@ -40,55 +43,57 @@ type TConfig = {
 
 export const config: TConfig = {
   html: {
-    title: "John Doe — 3D Portfolio",
-    fullName: "John Doe",
-    email: "johndoe@mail.com",
+    title: "Ray Purba — Creative Developer & 3D Portfolio",
+    fullName: profile.fullName,
+    email: profile.email,
   },
   hero: {
-    name: "John Doe",
-    p: ["I develop 3D visuals, user", "interfaces and web applications"],
+    name: "Ray Purba",
+    p: [
+      "Crafting high-impact 3D web experiences,",
+      "resilient frontend architectures, and fluid interactions.",
+    ],
   },
   contact: {
-    p: "Get in touch",
-    h2: "Contact.",
+    p: "// INITIATE TRANSMISSION",
+    h2: "Get In Touch.",
     form: {
       name: {
         span: "Your Name",
-        placeholder: "What's your name?",
+        placeholder: "e.g. Alex Morgan",
       },
-      email: { span: "Your Email", placeholder: "What's your email?" },
+      email: {
+        span: "Your Email",
+        placeholder: "e.g. alex@company.com",
+      },
       message: {
-        span: "Your Message",
-        placeholder: "What do you want to say?",
+        span: "Your Vision",
+        placeholder: "Tell me about your project or inquiry...",
       },
     },
   },
   sections: {
     about: {
-      p: "Introduction",
-      h2: "Overview.",
-      content: `I'm a skilled software developer with experience in TypeScript and
-      JavaScript, and expertise in frameworks like React, Node.js, and
-      Three.js. I'm a quick learner and collaborate closely with clients to
-      create efficient, scalable, and user-friendly solutions that solve
-      real-world problems. Let's work together to bring your ideas to life!`,
+      p: "// CORE DISCIPLINES",
+      h2: "Overview & Craft.",
+      content: `I bridge the gap between creative visual computing and robust frontend engineering. With deep focus on React, Three.js/WebGL, and TypeScript, I engineer high-performance web products that feel alive, intuitive, and tactile.`,
     },
     experience: {
-      p: "What I have done so far",
-      h2: "Work Experience.",
+      p: "// CAREER LOGS",
+      h2: "Experience.",
+    },
+    tech: {
+      p: "// TECHNICAL ARSENAL",
+      h2: "Tech Stack.",
     },
     feedbacks: {
-      p: "What others say",
-      h2: "Testimonials.",
+      p: "// TESTIMONIALS",
+      h2: "Collaborations.",
     },
     works: {
-      p: "My work",
-      h2: "Projects.",
-      content: `Following projects showcases my skills and experience through
-    real-world examples of my work. Each project is briefly described with
-    links to code repositories and live demos in it. It reflects my
-    ability to solve complex problems, work with different technologies,
-    and manage projects effectively.`,
+      p: "// CURATED SHOWCASE",
+      h2: "Selected Works.",
+      content: `A selection of digital products, 3D interactive interfaces, and architectural platforms crafted with precision engineering and high visual fidelity.`,
     },
   },
 };

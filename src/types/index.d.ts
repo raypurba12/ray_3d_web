@@ -18,6 +18,12 @@ export type TTestimonial = {
   image: string;
 } & Required<Pick<TCommonProps, "name">>;
 
+export type TProjectImage = {
+  id: string;
+  image: string;
+  caption: string;
+};
+
 export type TProject = {
   description: string;
   tags: {
@@ -26,15 +32,23 @@ export type TProject = {
   }[];
   image: string;
   sourceCodeLink: string;
+  liveDemoLink?: string;
+  metric?: string;
+  images?: TProjectImage[];
 } & Required<Pick<TCommonProps, "name">>;
 
 export type TTechnology = Required<Omit<TCommonProps, "title">>;
 
+export type TGalleryImage = {
+  id: string;
+  title: string;
+  image: string;
+  order: number;
+};
+
 export type TNavLink = {
   id: string;
 } & Required<Pick<TCommonProps, "title">>;
-
-export type TService = Required<Omit<TCommonProps, "name">>;
 
 export type TMotion = {
   direction: "up" | "down" | "left" | "right" | "";

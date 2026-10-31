@@ -1,120 +1,146 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-
-import { styles } from "../../constants/styles";
+import { Menu, X, ArrowUpRight } from "lucide-react";
+import { motion, useScroll, useSpring } from "framer-motion";
 import { navLinks } from "../../constants";
-import { logo, menu, close } from "../../assets";
 import { config } from "../../constants/config";
+import { usePortfolioContent } from "../../features/portfolio/content-context";
 
 const Navbar = () => {
-  const [active, setActive] = useState<string | null>();
+  const { gallery } = usePortfolioContent();
+  const links =
+    gallery.length > 0
+      ? navLinks
+      : navLinks.filter((nav) => nav.id !== "gallery");
+  const [active, setActive] = useState<string | null>("");
   const [toggle, setToggle] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // Scroll progress indicator
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      if (scrollTop > 100) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-        setActive("");
-      }
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 60);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    window.addEventListener("scroll", handleScroll);
+  useEffect(() => {
+    const sections = Array.from(
+      document.querySelectorAll<HTMLElement>("section[id]")
+    );
+    if (!sections.length) return;
 
-    const navbarHighlighter = () => {
-      const sections = document.querySelectorAll("section[id]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        });
+      },
+      { rootMargin: "-40% 0px -55% 0px" }
+    );
 
-      sections.forEach((current) => {
-        const sectionId = current.getAttribute("id");
-        // @ts-ignore
-        const sectionHeight = current.offsetHeight;
-        const sectionTop =
-          current.getBoundingClientRect().top - sectionHeight * 0.2;
-
-        if (sectionTop < 0 && sectionTop + sectionHeight > 0) {
-          setActive(sectionId);
-        }
-      });
-    };
-
-    window.addEventListener("scroll", navbarHighlighter);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("scroll", navbarHighlighter);
-    };
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
   }, []);
 
   return (
-    <nav
-      className={`${
-        styles.paddingX
-      } fixed top-0 z-20 flex w-full items-center py-5 ${
-        scrolled ? "bg-primary" : "bg-transparent"
-      }`}
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+          ? "py-3 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.08]"
+          : "py-6 bg-transparent"
+        }`}
     >
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
-        <Link
-          to="/"
-          className="flex items-center gap-2"
-          onClick={() => {
-            window.scrollTo(0, 0);
-          }}
-        >
-          <img src={logo} alt="logo" className="h-9 w-9 object-contain" />
-          <p className="flex cursor-pointer text-[18px] font-bold text-white ">
-            {config.html.title}
-          </p>
-        </Link>
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-acid via-[#00f5a0] to-acid origin-left"
+        style={{ scaleX }}
+      />
 
-        <ul className="hidden list-none flex-row gap-10 sm:flex">
-          {navLinks.map((nav) => (
-            <li
-              key={nav.id}
-              className={`${
-                active === nav.id ? "text-white" : "text-secondary"
-              } cursor-pointer text-[18px] font-medium hover:text-white`}
-            >
-              <a href={`#${nav.id}`}>{nav.title}</a>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex flex-1 items-center justify-end sm:hidden">
-          <img
-            src={toggle ? close : menu}
-            alt="menu"
-            className="h-[28px] w-[28px] object-contain"
-            onClick={() => setToggle(!toggle)}
-          />
-
-          <div
-            className={`${
-              !toggle ? "hidden" : "flex"
-            } black-gradient absolute right-0 top-20 z-10 mx-4 my-2 min-w-[140px] rounded-xl p-6`}
-          >
-            <ul className="flex flex-1 list-none flex-col items-start justify-end gap-4">
-              {navLinks.map((nav) => (
-                <li
-                  key={nav.id}
-                  className={`font-poppins cursor-pointer text-[16px] font-medium ${
-                    active === nav.id ? "text-white" : "text-secondary"
-                  }`}
-                  onClick={() => {
-                    setToggle(!toggle);
-                  }}
-                >
-                  <a href={`#${nav.id}`}>{nav.title}</a>
-                </li>
-              ))}
-            </ul>
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 sm:px-16">
+        {/* Brand Monogram */}
+        <a href="#top" className="flex items-center gap-2 group">
+          <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-display font-bold text-white text-base group-hover:border-acid transition-colors">
+            R<span className="text-acid">.</span>
           </div>
+          <span className="font-display font-bold text-base tracking-tight text-white group-hover:text-acid transition-colors">
+            {config.html.fullName}
+          </span>
+        </a>
+
+        {/* Desktop Navigation Links */}
+        <nav className="hidden lg:flex items-center gap-1 rounded-full px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
+          {links.map((nav) => (
+            <a
+              key={nav.id}
+              href={`#${nav.id}`}
+              className={`px-4 py-1.5 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 ${active === nav.id
+                  ? "bg-white/10 text-white font-medium border border-white/15"
+                  : "text-white/60 hover:text-white"
+                }`}
+            >
+              {nav.title}
+            </a>
+          ))}
+        </nav>
+
+        {/* Contact CTA */}
+        <div className="hidden lg:flex items-center gap-3">
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider text-white/90 bg-white/[0.05] border border-white/10 hover:border-acid hover:text-acid transition-all duration-200"
+          >
+            <span>Let's Talk</span>
+            <ArrowUpRight size={13} />
+          </a>
+        </div>
+
+        {/* Mobile Hamburger Toggle */}
+        <div className="flex lg:hidden items-center">
+          <button
+            type="button"
+            onClick={() => setToggle(!toggle)}
+            aria-label="Toggle Navigation"
+            aria-expanded={toggle}
+            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white hover:text-acid"
+          >
+            {toggle ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
+          {/* Mobile Overlay Menu */}
+          {toggle && (
+            <div className="absolute right-6 top-16 z-50 w-56 rounded-2xl bg-[#121216]/95 border border-white/10 backdrop-blur-2xl p-4 shadow-2xl flex flex-col gap-3">
+              {links.map((nav) => (
+                <a
+                  key={nav.id}
+                  href={`#${nav.id}`}
+                  onClick={() => setToggle(false)}
+                  className={`px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-wider transition-colors ${active === nav.id
+                      ? "bg-white/10 text-acid font-semibold"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
+                    }`}
+                >
+                  {nav.title}
+                </a>
+              ))}
+              <hr className="border-white/10 my-1" />
+              <a
+                href="#contact"
+                onClick={() => setToggle(false)}
+                className="px-3 py-2 rounded-lg font-mono text-xs uppercase tracking-wider text-center bg-acid text-black font-semibold"
+              >
+                Let's Talk
+              </a>
+            </div>
+          )}
         </div>
       </div>
-    </nav>
+    </header>
   );
 };
 

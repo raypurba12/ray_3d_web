@@ -1,6 +1,9 @@
 import EarthCanvas from "./Earth";
-import BallCanvas from "./Ball";
-import ComputersCanvas from "./Computers";
 import StarsCanvas from "./Stars";
+import Hero3DCanvas from "./Hero3D";
+import TechCanvas from "./TechCanvas";
 
-export { EarthCanvas, BallCanvas, ComputersCanvas, StarsCanvas };
+export { EarthCanvas, StarsCanvas, Hero3DCanvas, TechCanvas };
+export { default as ParticleTrail } from "./ParticleTrail";
+export { default as FluidGradient } from "./FluidGradient";
+export { default as CollisionSparks } from "./CollisionSparks";
