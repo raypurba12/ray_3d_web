@@ -47,11 +47,11 @@
   </FilesMatch>
 
   <FilesMatch "index\.html$">
-    Header set Cache-Control "no-cache"
+    Header always set Cache-Control "no-cache, must-revalidate"
   </FilesMatch>
 
   <FilesMatch "\.(webmanifest|xml|txt)$">
-    Header set Cache-Control "public, max-age=3600"
+    Header always set Cache-Control "public, max-age=3600"
   </FilesMatch>
 </IfModule>
 

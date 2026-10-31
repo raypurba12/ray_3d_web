@@ -255,6 +255,13 @@ Aplikasi CMS menyimpan dan menampilkan `path` (`/uploads/<file>`), sehingga
 gambar tetap tampil normal lewat domain publik. Jangan memakai field `url` di
 klien pihak ketiga; gunakan `path`.
 
+### Limitasi: header cache untuk HTML
+
+Hosting ini menghapus `Cache-Control`/`Expires` yang diset dari `.htaccess`
+untuk respons HTML dan teks. Aset ber-hash di `/assets` tetap memakai cache
+`immutable`; `index.html` mengandalkan validasi ulang bawaan browser. Kontrol
+cache penuh harus dilakukan di level hosting, bukan `.htaccess`.
+
 ## 10. Keamanan
 
 - Dokumen root hanya berisi hasil build + `.htaccess`; tidak ada source, `.env`,
