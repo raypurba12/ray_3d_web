@@ -1,241 +1,267 @@
-# Deploy ke Domainesia cPanel (Shared/Cloud Hosting)
+# Deploy Produksi — DomaiNesia cPanel + Apache Reverse Proxy
 
-Target arsitektur:
+Dokumen ini adalah runbook produksi untuk `https://raypurba.my.id` dan panduan
+redeploy dari GitHub. Nilai rahasia (password DB, JWT, kredensial admin) tidak
+boleh ditulis di repo; semuanya berada di `.env` server dengan izin `600`.
 
-- **Frontend statis** (hasil `vite build`) di `public_html` domain utama.
-- **API Node.js** sebagai cPanel Node.js App (Passenger) di app root di luar
-  `public_html`, diakses lewat subdomain `api.<domain>`.
-- **MySQL** dari cPanel, user/database berprefix akun.
-- **Upload** disimpan di folder persisten di luar app root.
+## 1. Arsitektur aktual
 
-> Ganti placeholder berikut sebelum mulai: `<domain>`, `<user>` (username
-> cPanel), `<db_name>`, `<db_user>`, `<db_pass>`.
-
----
-
-## 0. Prasyarat
-
-1. Domain utama sudah aktif dan mengarah ke hosting.
-2. Subdomain `api.<domain>` dibuat (Document Root boleh apa saja; Passenger
-   akan mengabaikannya).
-3. Database MySQL + user dibuat di cPanel, lalu user ditambahkan ke database
-   dengan ALL PRIVILEGES.
-4. "Setup Node.js App" tersedia dan Node.js 20 atau 22 bisa dipilih.
-5. Akses Terminal/SSH (disarankan). Tanpa SSH, build API dilakukan di lokal
-   dan file diunggah.
-
-Catat:
-
-- Versi Node yang tersedia di cPanel.
-- OpenSSL server (`openssl version` di Terminal) untuk `binaryTargets` Prisma.
-- Nama database, user, dan password yang sudah di-URL-encode bila mengandung
-  karakter khusus.
-
----
-
-## 1. Frontend (public_html)
-
-Build di lokal, bukan di server, agar env `VITE_*` ter-embed saat build.
-
-```bash
-# dari root repo
-npm ci
-VITE_API_URL=https://api.<domain>/api \
-VITE_SITE_URL=https://<domain> \
-VITE_CONTACT_EMAIL=you@example.com \
-npm run build
-```
-
-Windows PowerShell:
-
-```powershell
-$env:VITE_API_URL="https://api.<domain>/api"
-$env:VITE_SITE_URL="https://<domain>"
-$env:VITE_CONTACT_EMAIL="you@example.com"
-npm run build
-```
-
-Unggah **isi** `dist/` ke `public_html` (bukan foldernya), termasuk:
-
-- `index.html`
-- `assets/`
-- `.htaccess` — SPA rewrite, HTTPS, cache, security headers
-- `robots.txt`, `sitemap.xml`, `logo.svg`, `logo.png`
-
-Jangan upload `.env`, `node_modules`, atau folder `src/`.
-
-Setelah upload, cek:
-
-- `https://<domain>/admin/projects` mengembalikan `index.html` (200), bukan 404.
-- Aset `/assets/...` dan `/logo.svg` mengembalikan 200.
-- `http://<domain>` redirect ke HTTPS.
-
----
-
-## 2. API (cPanel Node.js App)
-
-### 2.1 Buat aplikasi
-
-Di cPanel → **Setup Node.js App** → Create Application:
-
-| Field | Nilai |
+| Komponen | Lokasi / cara jalan |
 | :--- | :--- |
-| Node.js version | 20 atau 22 |
-| Application mode | Production |
-| Application root | `api_app` (di luar `public_html`, mis. `/home/<user>/api_app`) |
-| Application URL | `api.<domain>` |
-| Application startup file | `dist/index.js` |
+| Frontend React/Vite/Three.js | Isi `dist/` di document root `~/raypurba.my.id` |
+| API Express + TypeScript | `node dist/index.js` dari `~/ray3d-app/api`, listen `127.0.0.1:5055` |
+| Reverse proxy | `.htaccess` Apache: `/api/*` dan `/uploads/*` → `127.0.0.1:5055` |
+| Database | MySQL/MariaDB cPanel, Prisma 5, prefix database akun |
+| Upload file | `~/ray3d-uploads` (persisten, di luar app dan docroot) |
+| Log API | `~/ray3d-logs/api.log` |
+| Proses persisten | `setsid nohup` + cron `@reboot` + watchdog tiap 5 menit |
+| Backup Laravel lama | `~/backups/ray3d-deploy-<timestamp>/` |
 
-Passenger menjalankan aplikasi dengan `process.env.PORT` yang diberikan
-hosting. Kode sudah memakai `listen(process.env.PORT)` tanpa konversi paksa,
-jadi jangan mengganti startup file ke `npm start` atau nodemon.
+**Keterbatasan hosting:** fitur Passenger (`passengerapps`) dinonaktifkan,
+modul Node.js Selector tidak tersedia, dan binary Passenger bawaan rusak. Karena
+itu API **tidak** dijalankan sebagai cPanel Node.js App. Alternatif yang dipakai
+adalah proses Node latar belakang + reverse proxy Apache + cron watchdog.
 
-### 2.2 Environment variables (UI cPanel)
+Konsekuensi:
 
-Tambahkan lewat tombol **Add Environment Variable**. Jangan membuat `.env` di
-server — file `.env` akan menimpa nilai cPanel.
+- Restart aplikasi dilakukan lewat script ops (bukan tombol cPanel).
+- Proses diawasi cron tiap 5 menit; jika mati, script start akan menyalakannya.
+- Port `5055` **hanya** mendengarkan `127.0.0.1`; akses publik hanya lewat HTTPS
+  `https://raypurba.my.id/api`.
+- `mod_proxy` Apache wajib aktif (sudah terverifikasi di server ini).
 
-| Variable | Contoh |
+## 2. Struktur path server
+
+```text
+$HOME/
+├── ray3d-app/                 # clone GitHub (branch main)
+│   ├── api/                   # source + dist API
+│   ├── dist/                  # hasil build frontend
+│   ├── .env.production        # VITE_API_URL / VITE_SITE_URL (build-time)
+│   └── api/.env               # runtime API (600, tidak masuk Git)
+├── raypurba.my.id/            # document root (isi dist/ + .htaccess)
+├── ray3d-uploads/             # file upload CMS
+├── ray3d-logs/                # api.log, api.pid, log build
+├── ray3d-ops/                 # start/stop/status + verify-prod.js
+└── backups/
+    ├── ray3d-deploy-<timestamp>/
+    │   ├── laravel-source.tar.gz
+    │   ├── docroot-raypurba.tar.gz
+    │   ├── db-laravel.sql.gz
+    │   ├── docroot-files-<timestamp>/   # file docroot lama + symlink
+    │   └── SHA256SUMS
+    └── temp-domain-htaccess/  # backup .htaccess domain staging
+```
+
+## 3. Environment produksi
+
+File `~/ray3d-app/api/.env` (izin `600`) berisi:
+
+| Variable | Keterangan |
 | :--- | :--- |
 | `NODE_ENV` | `production` |
-| `CLIENT_URL` | `https://<domain>,https://www.<domain>` |
-| `DATABASE_URL` | `mysql://<db_user>:<url_encoded_pass>@127.0.0.1:3306/<db_name>` |
+| `HOST` | `127.0.0.1` (hanya loopback) |
+| `PORT` | `5055` |
+| `CLIENT_URL` | `https://raypurba.my.id,https://www.raypurba.my.id` |
+| `DATABASE_URL` | `mysql://<db_user>:<pass>@127.0.0.1:3306/<db_name>` |
 | `JWT_SECRET` | 48+ karakter acak |
-| `JWT_REFRESH_SECRET` | 48+ karakter acak, berbeda dari `JWT_SECRET` |
-| `JWT_EXPIRE` | `15m` |
-| `JWT_REFRESH_EXPIRE` | `30d` |
+| `JWT_REFRESH_SECRET` | 48+ karakter acak, berbeda |
+| `JWT_EXPIRE` / `JWT_REFRESH_EXPIRE` | `15m` / `30d` |
 | `MAX_FILE_SIZE` | `5242880` |
-| `UPLOAD_DIR` | `/home/<user>/portfolio-uploads` |
-| `CLOUDINARY_CLOUD_NAME` | opsional |
-| `CLOUDINARY_API_KEY` | opsional |
-| `CLOUDINARY_API_SECRET` | opsional |
-| `ADMIN_EMAIL` | email admin asli |
-| `ADMIN_PASSWORD` | password kuat (12+ karakter) |
+| `UPLOAD_DIR` | `/home/<user>/ray3d-uploads` (absolut, di luar app) |
+| `CLOUDINARY_*` | opsional; harus lengkap atau kosong |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | dipakai untuk seed admin |
+
+File `~/ray3d-app/.env.production` berisi nilai build-time:
+
+```dotenv
+VITE_API_URL=https://raypurba.my.id/api
+VITE_SITE_URL=https://raypurba.my.id
+```
+
+Nilainya ter-embed saat `vite build`; mengubahnya membutuhkan rebuild frontend.
+
+Kredensial admin yang dibuat saat deployment disimpan di
+`~/ray-3d-admin-credentials.txt` (izin `600`). Jangan pindahkan ke repo.
+
+## 4. Deploy pertama (ringkasan yang sudah dilakukan)
+
+1. Audit hosting: cek Passenger/Node/MySQL/Apache.
+2. Backup source Laravel, docroot, dan dump database; verifikasi checksum.
+3. Clone repo GitHub, buat database + user MySQL khusus.
+4. Isi `.env`, jalankan `prisma validate`, `prisma generate`,
+   `prisma migrate deploy` (7 migrasi), lalu seed admin.
+5. Build frontend dengan env produksi, build API.
+6. Jalankan API di `127.0.0.1:5055`, pasang cron watchdog.
+7. Uji semuanya di domain staging, lalu ganti isi docroot (file lama dipindah,
+   tidak dihapus) dan pasang `.htaccess` final.
+
+## 5. Redeploy dari GitHub (branch `main`)
+
+Jalankan di server dengan Node alt build CloudLinux:
+
+```bash
+export PATH="/opt/alt/alt-nodejs22/root/usr/bin:$PATH"
+cd "$HOME/ray3d-app"
+
+# 1. Ambil source terbaru (repo publik, tanpa kredensial)
+git pull --ff-only origin main
+
+# 2. Dependency (ulangi bila package-lock berubah)
+npm ci
+npm ci --prefix api
+
+# 3. Migrasi database — JANGAN pakai migrate reset / db push
+cd api
+npx prisma validate
+npx prisma generate
+npx prisma migrate deploy
+cd ..
+
+# 4. Build frontend (memakai .env.production) dan API
+npm run build
+npm run build --prefix api
+
+# 5. Salin build frontend ke docroot (.htaccess ikut dari public/.htaccess)
+cp -a dist/. "$HOME/raypurba.my.id/"
+find "$HOME/raypurba.my.id" -type d -exec chmod 755 {} +
+find "$HOME/raypurba.my.id" -type f -exec chmod 644 {} +
+
+# 6. Restart API
+"$HOME/ray3d-ops/stop-backend.sh" || true
+"$HOME/ray3d-ops/start-backend.sh"
+"$HOME/ray3d-ops/status-backend.sh"
+```
 
 Catatan:
 
-- `CLIENT_URL` adalah daftar origin persis, tanpa trailing slash, dipisah koma.
-  Sertakan versi `www` bila dipakai.
-- Jika password database mengandung karakter khusus, URL-encode
-  (mis. `@` → `%40`).
-- Gunakan `127.0.0.1` bila `localhost` gagal menghubungi MySQL cPanel.
-- Cloudinary harus diisi lengkap atau dikosongkan semua; konfigurasi
-  setengah-setengah membuat API gagal boot.
+- `api/.env` dan `.env.production` **tidak** ada di Git; jangan tertimpa.
+- `npm ci` di root menginstal devDependencies (Vite, TypeScript) yang dibutuhkan
+  untuk build.
+- Migrasi produksi selalu `prisma migrate deploy`. Dilarang `migrate reset`,
+  `db push`, atau `DROP DATABASE`.
+- Setelah deploy, jalankan verifikasi di bagian 7.
 
-### 2.3 Upload kode + install
+## 6. Operasional API
 
-Build di lokal:
+Script tersedia di `~/ray3d-ops/`:
+
+| Script | Fungsi |
+| :--- | :--- |
+| `start-backend.sh` | Start jika belum berjalan (`setsid nohup`, cek `pgrep`) |
+| `stop-backend.sh` | Hentikan proses berdasarkan `api.pid` |
+| `status-backend.sh` | Tampilkan PID + health lokal |
+| `verify-prod.js` | Verifikasi end-to-end lewat domain publik |
+
+Cron yang terpasang:
+
+```cron
+@reboot /home/<user>/ray3d-ops/start-backend.sh >/dev/null 2>&1
+*/5 * * * * /home/<user>/ray3d-ops/start-backend.sh >/dev/null 2>&1
+```
+
+Wajib ada `HOST=127.0.0.1` di `api/.env` dan di kode `app.listen(port, host)`.
+Verifikasi binding:
 
 ```bash
-cd api
-npm ci
-npm run build
-npx prisma generate
+awk '$2 ~ /:13BF$/ {print $2, $4}' /proc/net/tcp   # 0100007F:13BF 0A = 127.0.0.1:5055 LISTEN
 ```
 
-Unggah ke application root (`/home/<user>/api_app`):
+Jika baris kosong padahal health lokal hidup, proses mungkin listen di interface
+lain — segera restart dengan build terbaru.
 
-- `dist/`
-- `prisma/` (termasuk `schema.prisma` dan folder `migrations/`)
-- `package.json`, `package-lock.json`
-
-Di Terminal cPanel:
+Log: `~/ray3d-logs/api.log`. Rotasi manual bila perlu:
 
 ```bash
-cd ~/api_app
-npm install --omit=dev        # postinstall menjalankan prisma generate untuk Linux
-npx prisma migrate deploy     # terapkan migrasi produksi
+mv "$HOME/ray3d-logs/api.log" "$HOME/ray3d-logs/api.log.$(date +%F)"
+"$HOME/ray3d-ops/stop-backend.sh"; "$HOME/ray3d-ops/start-backend.sh"
 ```
 
-Jika Node/Prisma gagal memuat engine, sesuaikan `generator client` di
-`prisma/schema.prisma`:
+## 7. Verifikasi pasca-deploy
 
-```prisma
-binaryTargets = ["native", "debian-openssl-3.0.x"]
-# tambahkan "debian-openssl-1.1.x" bila OpenSSL server masih 1.1
-```
-
-Lalu jalankan ulang `npx prisma generate`.
-
-Buat folder upload persisten:
+Cek cepat:
 
 ```bash
-mkdir -p ~/portfolio-uploads
+curl -sSI https://raypurba.my.id/ | head -20
+curl -sS  https://raypurba.my.id/api/health
+curl -sS -o /dev/null -w "%{http_code}\n" https://raypurba.my.id/admin/login
+curl -sS -o /dev/null -w "%{http_code}\n" https://raypurba.my.id/assets/tidak-ada.js
 ```
 
-Pastikan kepemilikan/izin dapat ditulis oleh proses Passenger. Jalankan
-**Restart** aplikasi dari UI cPanel setelah mengubah env atau kode.
-
-### 2.4 Seed admin (sekali)
-
-Karena `tsx` adalah devDependency dan server di-install dengan
-`--omit=dev`, pilih salah satu:
-
-**A. Dari lokal (disarankan).** Aktifkan Remote MySQL di cPanel dan
-whitelist IP lokal, lalu dari `api/`:
+Cek end-to-end (login, refresh, CRUD, upload, logout) tanpa menampilkan token:
 
 ```bash
-DATABASE_URL="mysql://<db_user>:<pass>@<server_ip>:3306/<db_name>" \
-ADMIN_EMAIL="you@example.com" \
-ADMIN_PASSWORD="Strong-Password-123!" \
-npm run prisma:seed
+/opt/alt/alt-nodejs22/root/usr/bin/node "$HOME/ray3d-ops/verify-prod.js"
 ```
 
-**B. Di server.** Install `tsx` sementara lalu jalankan seed:
+Semua baris harus `PASS`.
+
+## 8. Backup dan rollback Laravel lama
+
+Backup yang sudah diverifikasi (SHA256 cocok):
 
 ```bash
-cd ~/api_app
-npm install --no-save tsx
-npx prisma db seed
+cd "$HOME/backups/ray3d-deploy-<timestamp>"
+sha256sum -c SHA256SUMS
 ```
 
-Keduanya harus dijalankan setelah `npx prisma migrate deploy`.
+Isi:
 
----
+- `laravel-source.tar.gz` — source Laravel lengkap.
+- `docroot-raypurba.tar.gz` — docroot lama (mayoritas symlink).
+- `docroot-files-<timestamp>/` — file + symlink docroot lama yang dipindahkan
+  saat pergantian (`.htaccess`, `index.php`, `.user.ini`, `php.ini`, symlink).
+- `db-laravel.sql.gz` — dump database Laravel (30 tabel).
 
-## 3. Verifikasi pasca-deploy
+Rollback frontend lama (tanpa menyentuh database baru):
 
-1. `curl https://api.<domain>/api/health` → 200 `{ "db": "up" }`.
-2. Restart Node app dari cPanel → health tetap 200.
-3. Login admin di `https://<domain>/admin`.
-4. Upload satu gambar, restart app, pastikan URL upload masih bisa dibuka
-   (file persisten di `UPLOAD_DIR`).
-5. Buka deep link `https://<domain>/admin/projects`.
-6. Kirim satu pesan kontak dan buka halaman publik sekali; cek baris baru di
-   `ContactMessage` dan `PageView`.
-7. Matikan Node app sementara → frontend menampilkan cache + banner retry,
-   bukan data palsu.
-8. Pastikan origin lain ditolak CORS dan HTTPS/HSTS aktif.
+```bash
+D="$HOME/raypurba.my.id"
+BK="$HOME/backups/ray3d-deploy-<timestamp>/docroot-files-<timestamp>"
+# pindahkan build baru ke samping, bukan hapus
+mv "$D" "$HOME/raypurba.my.id.react"
+mkdir -p "$D"
+cp -a "$BK"/. "$D"/
+# symlink build/images/models/storage sudah menunjuk source Laravel yang utuh
+```
 
----
+Database Laravel tidak diubah dan tidak dihapus. Jika perlu restore dump:
 
-## 4. Rollback
+```bash
+gunzip -c "$HOME/backups/ray3d-deploy-<timestamp>/db-laravel.sql.gz" | mysql -u <user> -p <db_lama>
+```
 
-- **Frontend:** simpan salinan `public_html` sebelum upload; kembalikan folder
-  `assets/` + `index.html` versi sebelumnya.
-- **API:** deploy folder rilis per versi (mis. `api_app_releases/<timestamp>`)
-  dan arahkan Application root ke versi sebelumnya, lalu Restart.
-- **Database:** migrasi Prisma tidak otomatis rollback. Buat dump MySQL sebelum
-  `prisma migrate deploy`:
-  `mysqldump -u <db_user> -p <db_name> > backup-$(date +%F).sql`.
-- **Upload:** folder `~/portfolio-uploads` tidak tersentuh rollback kode; tetap
-  backup berkala.
+Lakukan hanya jika benar-benar diperlukan; database CMS baru terpisah dan tidak
+terpengaruh.
 
----
+## 9. Troubleshooting
 
-## 5. Jebakan umum
+| Gejala | Cek |
+| :--- | :--- |
+| 503 di `/api/*` | `status-backend.sh`, `api.log`, cron watchdog, binding 5055 |
+| 500 setelah ubah `.htaccess` | Sintaks Apache; bandingkan dengan `public/.htaccess` |
+| Upload gagal | Izin `~/ray3d-uploads`, `MAX_FILE_SIZE`, signature file, rate limit |
+| Login 401 | `ADMIN_EMAIL`/`ADMIN_PASSWORD` di `api/.env`; sinkronkan hash admin |
+| Gambar upload tidak tampil | Pastikan CMS memakai `path` (`/uploads/...`), bukan `url` |
+| Deep link 404 | `mod_rewrite` + fallback `index.html` di `.htaccess` |
+| CORS ditolak | `CLIENT_URL` harus memuat origin persis (tanpa slash) |
+| Prisma error koneksi | `DATABASE_URL`, user DB, izin `ALL PRIVILEGES` |
 
-- **Jangan upload `node_modules` Windows.** Prisma client dan engine Linux harus
-  di-generate di server.
-- **Jangan upload `.env`.** Env cPanel akan tertimpa.
-- **Perubahan `VITE_*` butuh rebuild frontend**; env tidak dibaca saat runtime.
-- **Passenger:** startup file harus `dist/index.js`; jangan pakai `npm start`.
-- **Uploads:** taruh `UPLOAD_DIR` di luar app root agar tidak hilang saat
-  redeploy.
-- **CORS:** origin harus persis (`https://domain` vs `https://www.domain`).
-- **MySQL cPanel:** user/database berprefix akun; URL-encode password.
-- **OpenSSL:** `binaryTargets` harus cocok dengan server, jika tidak Prisma
-  gagal start.
-- **Rate limit di belakang proxy:** API membaca `req.ip`; pastikan Passenger
-  meneruskan IP klien dengan benar. Jika semua request terlihat dari satu IP,
-  aktifkan `trust proxy` di `server.ts` sesuai kebutuhan hosting.
+### Limitasi: `url` absolut pada respons upload
+
+Karena Apache `mod_proxy` mengganti header `Host` menjadi `127.0.0.1:5055`,
+respons upload dari API memuat `url` absolut `http(s)://127.0.0.1:5055/uploads/...`.
+Aplikasi CMS menyimpan dan menampilkan `path` (`/uploads/<file>`), sehingga
+gambar tetap tampil normal lewat domain publik. Jangan memakai field `url` di
+klien pihak ketiga; gunakan `path`.
+
+## 10. Keamanan
+
+- Dokumen root hanya berisi hasil build + `.htaccess`; tidak ada source, `.env`,
+  atau `node_modules`.
+- API listen di loopback; port `5055` tidak dapat diakses dari internet.
+- HTTPS + HSTS, CSP, `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, dan `Permissions-Policy` aktif.
+- `.env` dan file kredensial berizin `600`.
+- Repo publik tidak memuat rahasia; `.env` di-ignore oleh Git.
+- Jangan menonaktifkan firewall/Apache security untuk kerja normal.

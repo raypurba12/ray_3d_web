@@ -1,12 +1,28 @@
-# SPA routing + HTTPS + caching + security headers for static hosting (cPanel).
+# Apache configuration for the Ray Purba 3D portfolio (cPanel + reverse proxy).
+# The Node API runs on 127.0.0.1:5055; Apache proxies /api and /uploads to it.
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
-  # Force HTTPS (safe behind cPanel's proxy: check HTTPS or the forwarded proto).
+  # Force HTTPS (keep ACME challenges reachable over HTTP).
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
   RewriteCond %{HTTPS} !=on
   RewriteCond %{HTTP:X-Forwarded-Proto} !https
   RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Canonical host: www -> apex.
+  RewriteCond %{HTTP_HOST} ^www\.raypurba\.my\.id$ [NC]
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteRule ^ https://raypurba.my.id%{REQUEST_URI} [L,R=301]
+
+  # Reverse proxy for the Node API and uploaded files.
+  RewriteRule ^api/(.*)$ http://127.0.0.1:5055/api/$1 [P,L]
+  RewriteRule ^uploads/(.*)$ http://127.0.0.1:5055/uploads/$1 [P,L]
+
+  # Never serve the SPA shell for missing build assets.
+  RewriteCond %{REQUEST_URI} ^/(assets|planet)/
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ - [R=404,L]
 
   # Serve existing files and directories untouched.
   RewriteCond %{REQUEST_FILENAME} -f [OR]
@@ -18,6 +34,7 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+  RequestHeader set X-Forwarded-Proto "https"
   Header always set X-Content-Type-Options "nosniff"
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -25,7 +42,7 @@
   Header always set Strict-Transport-Security "max-age=31536000"
   Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' blob:; connect-src 'self' https:; worker-src 'self' blob:"
 
-  <FilesMatch "\.(js|css|svg|png|jpg|jpeg|webp|gif|ico|woff2?|glb|gltf)$">
+  <FilesMatch "\.(js|css|svg|png|jpg|jpeg|webp|gif|ico|woff2?|glb|gltf|bin)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 
