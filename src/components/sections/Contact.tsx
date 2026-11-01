@@ -1,10 +1,8 @@
-import React, { useEffect, useRef, useState, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import React, { lazy, useEffect, useRef, useState, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle2, AlertCircle } from "lucide-react";
 
-import { DeferredCanvas, EarthCanvas } from "../canvas";
-import { FluidGradient } from "../canvas/FluidGradient";
+import { DeferredCanvas } from "../canvas/DeferredCanvas";
 import { SectionWrapper } from "../../hoc";
 import { slideIn } from "../../utils/motion";
 import { config } from "../../constants/config";
@@ -13,27 +11,15 @@ import { sendContactMessage } from "../../features/portfolio/api";
 import { ApiError } from "../../lib/api";
 import { Header } from "../atoms/Header";
 import { Magnetic } from "../atoms/Magnetic";
-import { useIsMobile } from "../../hooks/useMediaQuery";
 
-const INITIAL_STATE = Object.fromEntries(
-  Object.keys(config.contact.form).map((input) => [input, ""])
-);
+const EarthCanvas = lazy(() => import("../canvas/Earth"));
+const FluidGradientCanvas = lazy(() => import("../canvas/FluidGradientCanvas"));
 
-const FluidGradientCanvas = () => {
-  const isMobile = useIsMobile();
-  return (
-    <DeferredCanvas className="absolute inset-0 h-full w-full" rootMargin="200px">
-      <Canvas
-        camera={{ position: [0, 0, 5], fov: 45 }}
-        dpr={isMobile ? [1, 1.25] : [1, 1.5]}
-        gl={{ antialias: false, alpha: true }}
-      >
-        <Suspense fallback={null}>
-          <FluidGradient />
-        </Suspense>
-      </Canvas>
-    </DeferredCanvas>
-  );
+const INITIAL_STATE: Record<string, string> = {
+  ...Object.fromEntries(
+    Object.keys(config.contact.form).map((input) => [input, ""])
+  ),
+  website: "",
 };
 
 const Contact = () => {
@@ -98,6 +84,7 @@ const Contact = () => {
         name: form["name"],
         email: form["email"],
         message: form["message"],
+        website: form.website,
       });
       setStatus("success");
       setForm(INITIAL_STATE);
@@ -115,7 +102,9 @@ const Contact = () => {
     <div className="flex flex-col gap-6 overflow-hidden sm:gap-8 xl:mt-8 xl:flex-row items-stretch relative">
       {/* Ambient Fluid Background */}
       <div className="absolute inset-0 -z-10 opacity-60">
-        <FluidGradientCanvas />
+        <Suspense fallback={null}>
+          <FluidGradientCanvas />
+        </Suspense>
       </div>
 
       {/* Contact Form Card */}
@@ -131,6 +120,22 @@ const Contact = () => {
             onSubmit={handleSubmit}
             className="mt-8 flex flex-col gap-5"
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
+            >
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={form.website}
+                onChange={handleChange}
+              />
+            </div>
+
             {Object.keys(config.contact.form).map((input) => {
               const { span, placeholder } =
                 config.contact.form[input as keyof typeof config.contact.form];
@@ -228,7 +233,9 @@ const Contact = () => {
         className="h-[320px] sm:h-[400px] md:h-[500px] xl:h-auto xl:flex-1 relative rounded-2xl overflow-hidden bento-card"
       >
         <DeferredCanvas className="h-full w-full" rootMargin="200px">
-          <EarthCanvas />
+          <Suspense fallback={null}>
+            <EarthCanvas />
+          </Suspense>
         </DeferredCanvas>
 
         {profile.avatar && (

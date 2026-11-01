@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const siteUrl = (env.VITE_SITE_URL || "https://raypurba.com").replace(
+  const siteUrl = (env.VITE_SITE_URL || "https://raypurba.my.id").replace(
     /\/+$/,
     ""
   );
@@ -25,13 +25,10 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return undefined;
-            if (
-              id.includes("/three/") ||
-              id.includes("@react-three") ||
-              id.includes("/maath/")
-            ) {
-              return "three";
-            }
+            // Keep prop-types out of the three chunk: the timeline library
+            // needs it eagerly, which would otherwise pull three.js into the
+            // initial bundle.
+            if (id.includes("node_modules/prop-types")) return "vendor";
             if (
               id.includes("/react/") ||
               id.includes("react-dom") ||

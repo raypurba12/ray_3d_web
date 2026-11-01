@@ -1,11 +1,14 @@
+import { lazy, Suspense } from "react";
 import { MousePointer } from "lucide-react";
 
-import { DeferredCanvas, TechCanvas } from "../canvas";
+import { DeferredCanvas } from "../canvas/DeferredCanvas";
 import { SectionWrapper } from "../../hoc";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { useFinePointer } from "../../hooks/useMediaQuery";
 import { Header } from "../atoms/Header";
+
+const TechCanvas = lazy(() => import("../canvas/TechCanvas"));
 
 const Tech = () => {
   const finePointer = useFinePointer();
@@ -33,7 +36,9 @@ const Tech = () => {
           className="mt-10 h-[380px] w-full overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.015] sm:h-[460px] lg:h-[520px]"
           skipWhenReducedMotion={false}
         >
-          <TechCanvas technologies={technologies} />
+          <Suspense fallback={null}>
+            <TechCanvas technologies={technologies} />
+          </Suspense>
         </DeferredCanvas>
       ) : (
         <div className="mt-10 flex h-[220px] w-full items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.015] px-6 text-center">

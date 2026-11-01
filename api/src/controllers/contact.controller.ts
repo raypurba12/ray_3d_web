@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import type { Request, Response } from 'express';
 import type { MessageStatus } from '@prisma/client';
 import * as contactService from '../services/contact.service';
+import type { CreateContactMessageInput } from '../schemas/contact.schema';
 import { successResponse } from '../utils/response';
 
 const STATUSES: MessageStatus[] = ['NEW', 'READ', 'ARCHIVED'];
@@ -11,7 +13,18 @@ const parseStatus = (value: unknown): MessageStatus | undefined =>
     : undefined;
 
 export const createController = async (req: Request, res: Response) => {
-  const message = await contactService.create(req.body);
+  const { website, ...payload } = req.body as CreateContactMessageInput;
+
+  if (typeof website === 'string' && website.trim() !== '') {
+    res
+      .status(201)
+      .json(
+        successResponse({ id: crypto.randomUUID() }, 'Message received')
+      );
+    return;
+  }
+
+  const message = await contactService.create(payload);
   res.status(201).json(successResponse(message, 'Message received'));
 };
 

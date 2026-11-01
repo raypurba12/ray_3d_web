@@ -1,5 +1,5 @@
 const fallbackOrigin =
-  typeof window !== "undefined" ? window.location.origin : "https://raypurba.com";
+  typeof window !== "undefined" ? window.location.origin : "https://raypurba.my.id";
 
 const siteUrl = (import.meta.env.VITE_SITE_URL ?? "").trim() || fallbackOrigin;
 

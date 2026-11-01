@@ -1,16 +1,10 @@
 import type { AdminUser } from "../types/admin";
 
-const ACCESS_TOKEN_KEY = "rp_access_token";
-const REFRESH_TOKEN_KEY = "rp_refresh_token";
 const USER_KEY = "rp_user";
+const LEGACY_ACCESS_KEY = "rp_access_token";
+const LEGACY_REFRESH_KEY = "rp_refresh_token";
 
 export const UNAUTHORIZED_EVENT = "admin:unauthorized";
-
-export const getAccessToken = (): string | null =>
-  localStorage.getItem(ACCESS_TOKEN_KEY);
-
-export const getRefreshToken = (): string | null =>
-  localStorage.getItem(REFRESH_TOKEN_KEY);
 
 export const getStoredUser = (): AdminUser | null => {
   const raw = localStorage.getItem(USER_KEY);
@@ -23,24 +17,19 @@ export const getStoredUser = (): AdminUser | null => {
   }
 };
 
-export const storeTokens = (accessToken: string, refreshToken: string) => {
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+export const storeUser = (user: AdminUser) => {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  clearLegacyTokens();
 };
 
-export const storeSession = (
-  user: AdminUser,
-  accessToken: string,
-  refreshToken: string
-) => {
-  storeTokens(accessToken, refreshToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export const clearLegacyTokens = () => {
+  localStorage.removeItem(LEGACY_ACCESS_KEY);
+  localStorage.removeItem(LEGACY_REFRESH_KEY);
 };
 
 export const clearSession = () => {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-  localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  clearLegacyTokens();
 };
 
 export const notifyUnauthorized = () => {

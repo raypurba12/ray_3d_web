@@ -8,6 +8,8 @@ export const createContactMessageSchema = z.object({
     .trim()
     .min(10, 'Message must be at least 10 characters')
     .max(5000),
+  // Honeypot: hidden in the UI, bots tend to fill it in.
+  website: z.string().max(200).optional(),
 });
 
 export const updateContactMessageSchema = z.object({

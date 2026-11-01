@@ -108,8 +108,8 @@ cd "$HOME/ray3d-app"
 git pull --ff-only origin main
 
 # 2. Dependency (ulangi bila package-lock berubah)
-npm ci
-npm ci --prefix api
+npm ci --include=dev
+npm ci --prefix api --include=dev
 
 # 3. Migrasi database — JANGAN pakai migrate reset / db push
 cd api
@@ -127,6 +127,9 @@ cp -a dist/. "$HOME/raypurba.my.id/"
 find "$HOME/raypurba.my.id" -type d -exec chmod 755 {} +
 find "$HOME/raypurba.my.id" -type f -exec chmod 644 {} +
 
+# 5b. Pasang verifier terbaru (cookie sesi, bukan token di body)
+install -m 700 api/scripts/verify-prod.js "$HOME/ray3d-ops/verify-prod.js"
+
 # 6. Restart API
 "$HOME/ray3d-ops/stop-backend.sh" || true
 "$HOME/ray3d-ops/start-backend.sh"
@@ -136,11 +139,43 @@ find "$HOME/raypurba.my.id" -type f -exec chmod 644 {} +
 Catatan:
 
 - `api/.env` dan `.env.production` **tidak** ada di Git; jangan tertimpa.
-- `npm ci` di root menginstal devDependencies (Vite, TypeScript) yang dibutuhkan
-  untuk build.
+- `npm ci --include=dev` memaksa devDependencies (Vite, TypeScript, tsx) ikut
+  terpasang meskipun shell memiliki `NODE_ENV=production`.
 - Migrasi produksi selalu `prisma migrate deploy`. Dilarang `migrate reset`,
   `db push`, atau `DROP DATABASE`.
+- Script verifikasi sumbernya ada di repo (`api/scripts/verify-prod.js`); versi
+  lama di server memakai Bearer token dan harus diganti.
 - Setelah deploy, jalankan verifikasi di bagian 7.
+
+### 5.1 Seed konten dan aset upload (sekali per database baru)
+
+Folder `api/uploads/` di-ignore Git, jadi aset seed tidak ikut `git pull`.
+
+Isi database (idempoten, aman diulang) dari server:
+
+```bash
+cd "$HOME/ray3d-app"
+npm run prisma:seed --prefix api
+npm run prisma:seed:content --prefix api
+```
+
+Peringatan: `prisma:seed:content` bersifat upsert. Baris dengan judul/perusahaan/
+urutan yang sama akan **ditimpa** dengan konten seed, dan tag yang tidak dipakai
+proyek mana pun akan dihapus. Jalankan hanya pada database baru atau jika memang
+ingin memuat ulang konten contoh; jangan jalankan di atas konten produksi yang
+sudah dikurasi.
+
+Salin aset seed dari mesin lokal ke server (jalankan di mesin lokal, bukan di
+server):
+
+```bash
+scp api/uploads/* <user>@<host-server>:~/ray3d-uploads/
+```
+
+Aset yang dirujuk seed mencakup `seed-project-*.webp`,
+`seed-gallery-immersive.webp`, avatar, PDF resume, dan ikon teknologi
+`/uploads/17933828*.png`. Tanpa langkah ini gambar akan 404 meskipun database
+sudah terisi. Setelah menyalin, jalankan verifikasi bagian 7.
 
 ## 6. Operasional API
 
@@ -151,7 +186,7 @@ Script tersedia di `~/ray3d-ops/`:
 | `start-backend.sh` | Start jika belum berjalan (`setsid nohup`, cek `pgrep`) |
 | `stop-backend.sh` | Hentikan proses berdasarkan `api.pid` |
 | `status-backend.sh` | Tampilkan PID + health lokal |
-| `verify-prod.js` | Verifikasi end-to-end lewat domain publik |
+| `verify-prod.js` | Verifikasi end-to-end lewat domain publik (sumber: `api/scripts/verify-prod.js`) |
 
 Cron yang terpasang:
 
@@ -188,13 +223,20 @@ curl -sS -o /dev/null -w "%{http_code}\n" https://raypurba.my.id/admin/login
 curl -sS -o /dev/null -w "%{http_code}\n" https://raypurba.my.id/assets/tidak-ada.js
 ```
 
-Cek end-to-end (login, refresh, CRUD, upload, logout) tanpa menampilkan token:
+Cek end-to-end (health, cache, cookie HttpOnly, refresh rotation, CRUD, upload,
+logout) tanpa menampilkan token:
 
 ```bash
 /opt/alt/alt-nodejs22/root/usr/bin/node "$HOME/ray3d-ops/verify-prod.js"
 ```
 
-Semua baris harus `PASS`.
+Script membaca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari `~/ray3d-app/api/.env`.
+Bisa dioverride lewat `VERIFY_EMAIL`/`VERIFY_PASSWORD`, dan domain lewat
+`VERIFY_BASE_URL` (default `https://raypurba.my.id`).
+
+Script membuat satu proyek uji, mengunggah PNG 1x1, lalu menghapus proyek dan
+file tersebut kembali. Semua baris harus `PASS`; exit code selain 0 berarti ada
+pemeriksaan yang gagal.
 
 ## 8. Backup dan rollback Laravel lama
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Layers,
@@ -14,8 +14,11 @@ import { SectionWrapper } from "../../hoc";
 import { fadeIn } from "../../utils/motion";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
-import { AmbientGeometryCanvas } from "../canvas";
 import { Header } from "../atoms/Header";
+
+const AmbientGeometryCanvas = lazy(
+  () => import("../canvas/AmbientGeometry")
+);
 
 const About = () => {
   const [time, setTime] = useState("");
@@ -53,7 +56,9 @@ const About = () => {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <AmbientGeometryCanvas />
+        <Suspense fallback={null}>
+          <AmbientGeometryCanvas />
+        </Suspense>
       </div>
 
       <Header useMotion={true} {...config.sections.about} />

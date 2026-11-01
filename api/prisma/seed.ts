@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { passwordSchema } from '../src/schemas/auth.schema';
 import { hashPassword } from '../src/utils/password';
 
 const prisma = new PrismaClient();
@@ -22,8 +23,12 @@ const readAdminCredentials = () => {
     );
   }
 
-  if (password.length < 12) {
-    throw new Error('ADMIN_PASSWORD must be at least 12 characters long.');
+  const passwordCheck = passwordSchema.safeParse(password);
+
+  if (!passwordCheck.success) {
+    throw new Error(
+      `ADMIN_PASSWORD is too weak: ${passwordCheck.error.issues[0]?.message ?? 'invalid password'}`
+    );
   }
 
   return { email, password };

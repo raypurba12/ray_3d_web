@@ -7,9 +7,9 @@ Immersive portfolio frontend (React + Three.js) with a self-hosted CMS API
 
 | Layer | Technology |
 | :--- | :--- |
-| Frontend | React 18, Vite 5, TypeScript, Tailwind CSS, Three.js / R3F |
+| Frontend | React 18, Vite 7, TypeScript, Tailwind CSS, Three.js / R3F |
 | API | Express 5, TypeScript, Prisma 5, MySQL 8 |
-| Auth | Bearer JWT (15m access + 30d rotating refresh), bcrypt |
+| Auth | HttpOnly cookie session (15m access + 30d rotating refresh), bcrypt |
 | Storage | Local disk or Cloudinary (optional) |
 
 ## Repository layout

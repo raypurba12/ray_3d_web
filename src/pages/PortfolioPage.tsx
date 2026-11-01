@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { MotionConfig } from "framer-motion";
 import Lenis from "lenis";
 
@@ -12,10 +12,9 @@ import {
   Navbar,
   Tech,
   Works,
-  StarsCanvas,
   CommandMenu,
 } from "../components";
-import { DeferredCanvas } from "../components/canvas";
+import { DeferredCanvas } from "../components/canvas/DeferredCanvas";
 import { CustomCursor } from "../components/layout/CustomCursor";
 import ContentStatus from "../components/system/ContentStatus";
 import { config } from "../constants/config";
@@ -23,6 +22,8 @@ import { ContentProvider } from "../features/portfolio/ContentProvider";
 import { usePortfolioContent } from "../features/portfolio/content-context";
 import { trackPageView } from "../features/portfolio/tracking";
 import { registerLenis, scrollToId } from "../utils/scrollTo";
+
+const StarsCanvas = lazy(() => import("../components/canvas/Stars"));
 
 const PortfolioFooter = () => {
   const { profile } = usePortfolioContent();
@@ -156,7 +157,9 @@ const PortfolioPage = () => {
             className="pointer-events-none absolute inset-0 z-[-1]"
             rootMargin="200px"
           >
-            <StarsCanvas />
+            <Suspense fallback={null}>
+              <StarsCanvas />
+            </Suspense>
           </DeferredCanvas>
         </div>
 

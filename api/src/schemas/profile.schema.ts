@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { optionalText, optionalUrl } from './common';
+import { optionalAssetUrl, optionalText, optionalUrl } from './common';
 
 export const updateProfileSchema = z
   .object({
@@ -7,7 +7,7 @@ export const updateProfileSchema = z
     tagline: z.string().trim().min(2, 'Tagline must be at least 2 characters'),
     bio: z.string().trim().min(10, 'Bio must be at least 10 characters'),
     avatar: z.string().trim().min(1, 'Avatar is required'),
-    resumeUrl: optionalText,
+    resumeUrl: optionalAssetUrl,
     email: z
       .string()
       .trim()

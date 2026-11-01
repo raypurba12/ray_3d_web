@@ -79,11 +79,16 @@ const UNIT_MS: Record<string, number> = {
   d: 86_400_000,
 };
 
-export const refreshTokenExpiry = (): Date => {
-  const match = /^(\d+)([smhd])$/.exec(env.JWT_REFRESH_EXPIRE);
-  const durationMs = match
-    ? Number(match[1]) * UNIT_MS[match[2]]
-    : 30 * UNIT_MS.d;
-
-  return new Date(Date.now() + durationMs);
+const durationMs = (value: string, fallbackMs: number): number => {
+  const match = /^(\d+)([smhd])$/.exec(value);
+  return match ? Number(match[1]) * UNIT_MS[match[2]] : fallbackMs;
 };
+
+export const accessTokenExpiryMs = (): number =>
+  durationMs(env.JWT_EXPIRE, 15 * UNIT_MS.m);
+
+export const refreshTokenExpiryMs = (): number =>
+  durationMs(env.JWT_REFRESH_EXPIRE, 30 * UNIT_MS.d);
+
+export const refreshTokenExpiry = (): Date =>
+  new Date(Date.now() + refreshTokenExpiryMs());

@@ -1,10 +1,4 @@
-import {
-  clearSession,
-  getAccessToken,
-  getRefreshToken,
-  notifyUnauthorized,
-  storeTokens,
-} from "./auth-storage";
+import { clearSession, notifyUnauthorized } from "./auth-storage";
 import type { ApiEnvelope, UploadedAsset } from "../types/admin";
 
 const DEFAULT_API_URL = "http://localhost:5000/api";
@@ -73,7 +67,7 @@ type RequestOptions = {
   timeoutMs?: number;
 };
 
-let refreshPromise: Promise<string> | null = null;
+let refreshPromise: Promise<void> | null = null;
 
 const fetchWithTimeout = async (
   url: string,
@@ -84,7 +78,11 @@ const fetchWithTimeout = async (
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, { ...init, signal: controller.signal });
+    return await fetch(url, {
+      ...init,
+      credentials: "include",
+      signal: controller.signal,
+    });
   } finally {
     clearTimeout(timer);
   }
@@ -95,36 +93,28 @@ const isAbortError = (error: unknown) =>
     ? error.name === "AbortError"
     : (error as { name?: string } | null)?.name === "AbortError";
 
-const refreshAccessToken = (): Promise<string> => {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    return Promise.reject(new ApiError(401, "Sesi berakhir."));
-  }
-
+const refreshAccessToken = (): Promise<void> => {
   if (!refreshPromise) {
     refreshPromise = fetchWithTimeout(
       `${API_BASE}/auth/refresh`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
+        body: "{}",
       },
       MUTATION_TIMEOUT_MS
     )
       .then(async (response) => {
+        if (response.ok) return;
+
         const payload = (await response.json().catch(() => null)) as
-          | ApiEnvelope<{ accessToken: string; refreshToken: string }>
+          | ApiEnvelope<unknown>
           | null;
 
-        if (!response.ok || !payload?.data) {
-          throw new ApiError(
-            response.status,
-            payload?.error ?? "Sesi berakhir."
-          );
-        }
-
-        storeTokens(payload.data.accessToken, payload.data.refreshToken);
-        return payload.data.accessToken;
+        throw new ApiError(
+          response.status,
+          payload?.error ?? "Sesi berakhir."
+        );
       })
       .finally(() => {
         refreshPromise = null;
@@ -154,9 +144,6 @@ export const request = async <T>(
 
   const headers: Record<string, string> = { Accept: "application/json" };
   if (body !== undefined) headers["Content-Type"] = "application/json";
-
-  const token = getAccessToken();
-  if (auth && token) headers.Authorization = `Bearer ${token}`;
 
   const idempotent = method === "GET";
   const timeout =
@@ -233,9 +220,7 @@ export const uploadFile = (
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${API_BASE}/upload`);
       xhr.timeout = UPLOAD_TIMEOUT_MS;
-
-      const token = getAccessToken();
-      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.withCredentials = true;
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
@@ -257,7 +242,7 @@ export const uploadFile = (
         );
 
       xhr.onload = async () => {
-        let payload: ApiEnvelope<UploadedAsset> | null = null;
+        let payload: ApiEnvelope<UploadedAsset> | null;
         try {
           payload = JSON.parse(xhr.responseText) as ApiEnvelope<UploadedAsset>;
         } catch {

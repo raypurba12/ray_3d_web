@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { pinoHttp } from 'pino-http';
 
 import { corsOrigins, env, isProduction } from './config/env';
@@ -22,7 +23,9 @@ import galleryRoutes from './routes/gallery.routes';
 import { configureCloudinary } from './config/cloudinary';
 import { ensureUploadsDir } from './config/paths';
 import { errorHandler, notFoundHandler } from './middleware/error';
+import { rateLimit } from './middleware/rateLimit';
 import { ApiError } from './utils/errors';
+import { ACCESS_COOKIE, readCookie } from './utils/cookies';
 import { errorResponse, successResponse } from './utils/response';
 
 const app = express();
@@ -35,6 +38,8 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
+
+app.use(compression({ threshold: 1024 }));
 
 app.use(
   pinoHttp({
@@ -57,6 +62,7 @@ app.use(
 
 app.use(
   cors({
+    credentials: true,
     origin: (origin, callback) => {
       if (!origin || corsOrigins.includes(origin)) {
         callback(null, true);
@@ -74,9 +80,9 @@ const uploadsDir = ensureUploadsDir();
 app.use(
   '/uploads',
   express.static(uploadsDir, {
-    maxAge: '7d',
+    maxAge: '30d',
     index: false,
-    immutable: false,
+    immutable: true,
   })
 );
 
@@ -135,6 +141,43 @@ app.get('/api/health/ready', async (_req, res) => {
     res.status(503).json(errorResponse('Database unavailable'));
   }
 });
+
+const PUBLIC_CONTENT_PREFIXES = [
+  '/api/projects',
+  '/api/technologies',
+  '/api/experiences',
+  '/api/testimonials',
+  '/api/profile',
+  '/api/gallery',
+];
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/auth')) {
+    res.setHeader('Cache-Control', 'no-store');
+  } else if (
+    req.method === 'GET' &&
+    !readCookie(req, ACCESS_COOKIE) &&
+    PUBLIC_CONTENT_PREFIXES.some(
+      (prefix) => req.path === prefix || req.path.startsWith(`${prefix}/`)
+    )
+  ) {
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=30, stale-while-revalidate=120'
+    );
+  }
+
+  next();
+});
+
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 60_000,
+    max: 300,
+    message: 'Too many requests. Please slow down.',
+  })
+);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);

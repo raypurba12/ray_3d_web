@@ -1,10 +1,37 @@
 import { z } from 'zod';
 
-export const urlString = z.string().trim().url();
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:']);
 
-/** Accepts a URL or a non-empty path, empty input clears the value. */
+const isSafeHttpUrl = (value: string) => {
+  try {
+    return SAFE_URL_PROTOCOLS.has(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+};
+
+export const urlString = z
+  .string()
+  .trim()
+  .refine(isSafeHttpUrl, 'URL must use http:// or https://');
+
+const uploadPath = z
+  .string()
+  .trim()
+  .regex(
+    /^\/uploads\/[A-Za-z0-9._-]+$/,
+    'Asset path must point to /uploads/<filename>'
+  );
+
+/** Accepts an http(s) URL or a local upload path, empty input clears the value. */
 export const optionalUrl = z
   .union([urlString, z.literal(''), z.null()])
+  .optional()
+  .transform((value) => (value ? value : null));
+
+/** Same as optionalUrl, but also allows /uploads/<file> paths. */
+export const optionalAssetUrl = z
+  .union([urlString, uploadPath, z.literal(''), z.null()])
   .optional()
   .transform((value) => (value ? value : null));
 

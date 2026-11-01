@@ -1,11 +1,13 @@
+import { lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Download, Terminal, MousePointer } from "lucide-react";
 import { styles } from "../../constants/styles";
-import { Hero3DCanvas } from "../canvas";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { trackCvDownload } from "../../features/portfolio/tracking";
 import { Magnetic } from "../atoms/Magnetic";
+
+const Hero3DCanvas = lazy(() => import("../canvas/Hero3D"));
 
 const Hero = () => {
   const { profile } = usePortfolioContent();
@@ -16,13 +18,15 @@ const Hero = () => {
       className="hero-screen relative mx-auto w-full flex flex-col justify-between overflow-hidden bg-primary pt-24 pb-10 sm:pt-28 sm:pb-12"
     >
       {/* Dynamic 3D WebGL Canvas Layer */}
-      <Hero3DCanvas
-        identity={{
-          name: profile.name,
-          tagline: profile.tagline,
-          avatarUrl: profile.avatar,
-        }}
-      />
+      <Suspense fallback={null}>
+        <Hero3DCanvas
+          identity={{
+            name: profile.name,
+            tagline: profile.tagline,
+            avatarUrl: profile.avatar,
+          }}
+        />
+      </Suspense>
 
       {/* Hero Foreground Content */}
       <div className={`relative z-10 mx-auto max-w-7xl w-full ${styles.paddingX} flex-1 flex flex-col justify-center pointer-events-none`}>

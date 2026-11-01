@@ -3,10 +3,10 @@ import * as authController from '../controllers/auth.controller';
 import { validate } from '../middleware/validate';
 import { authenticate, requireRole } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
+import type { AuthRequest } from '../types';
 import {
   changePasswordSchema,
   loginSchema,
-  refreshSchema,
   registerSchema,
 } from '../schemas/auth.schema';
 
@@ -24,6 +24,20 @@ const registerLimiter = rateLimit({
   message: 'Too many registration attempts. Try again later.',
 });
 
+const sessionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: 'Too many session requests. Try again later.',
+});
+
+const passwordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many password attempts. Try again later.',
+  keyGenerator: (req) =>
+    (req as AuthRequest).user?.userId || req.ip || 'unknown',
+});
+
 router.post(
   '/login',
   loginLimiter,
@@ -38,19 +52,12 @@ router.post(
   validate(registerSchema),
   authController.registerController
 );
-router.post(
-  '/refresh',
-  validate(refreshSchema),
-  authController.refreshController
-);
-router.post(
-  '/logout',
-  validate(refreshSchema),
-  authController.logoutController
-);
+router.post('/refresh', sessionLimiter, authController.refreshController);
+router.post('/logout', sessionLimiter, authController.logoutController);
 router.put(
   '/password',
   authenticate,
+  passwordLimiter,
   validate(changePasswordSchema),
   authController.changePasswordController
 );

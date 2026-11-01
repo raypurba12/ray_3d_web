@@ -2,6 +2,7 @@ import type { NextFunction, Response } from 'express';
 import prisma from '../config/database';
 import type { AuthRequest } from '../types';
 import { verifyAccessToken } from '../utils/jwt';
+import { ACCESS_COOKIE, readCookie } from '../utils/cookies';
 import { errorResponse } from '../utils/response';
 
 export const authenticate = async (
@@ -10,14 +11,17 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
+  const bearer =
+    authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+  const token = bearer ?? readCookie(req, ACCESS_COOKIE);
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!token) {
     res.status(401).json(errorResponse('No token provided'));
     return;
   }
 
   try {
-    const payload = verifyAccessToken(authHeader.slice(7));
+    const payload = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, email: true, role: true, tokenVersion: true },

@@ -3,11 +3,10 @@ import type { ReactNode } from "react";
 
 import { request } from "../../../lib/api";
 import {
+  clearLegacyTokens,
   clearSession,
-  getAccessToken,
-  getRefreshToken,
   getStoredUser,
-  storeSession,
+  storeUser,
   UNAUTHORIZED_EVENT,
 } from "../../../lib/auth-storage";
 import type { AdminUser } from "../../../types/admin";
@@ -16,24 +15,21 @@ import type { AuthContextValue, AuthStatus } from "./auth-context";
 
 type LoginResponse = {
   user: AdminUser;
-  accessToken: string;
-  refreshToken: string;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AdminUser | null>(() => getStoredUser());
-  const [status, setStatus] = useState<AuthStatus>(() =>
-    getAccessToken() ? "loading" : "unauthenticated"
-  );
+  const [status, setStatus] = useState<AuthStatus>("loading");
 
   useEffect(() => {
-    if (!getAccessToken()) return;
+    clearLegacyTokens();
 
     let cancelled = false;
 
     request<AdminUser>("/auth/me")
       .then((me) => {
         if (cancelled) return;
+        storeUser(me);
         setUser(me);
         setStatus("authenticated");
       })
@@ -67,20 +63,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       auth: false,
     });
 
-    storeSession(data.user, data.accessToken, data.refreshToken);
+    storeUser(data.user);
     setUser(data.user);
     setStatus("authenticated");
   }, []);
 
   const logout = useCallback(() => {
-    const refreshToken = getRefreshToken();
-    if (refreshToken) {
-      void request("/auth/logout", {
-        method: "POST",
-        body: { refreshToken },
-        auth: false,
-      }).catch(() => undefined);
-    }
+    void request("/auth/logout", {
+      method: "POST",
+      auth: false,
+    }).catch(() => undefined);
 
     clearSession();
     setUser(null);

@@ -70,7 +70,11 @@ startup.
 ## API Endpoints
 
 Semua respons memakai format `{ success, message?, data?, error?, errors? }`.
-Endpoint **protected** memerlukan header `Authorization: Bearer <accessToken>`.
+Login dan refresh mengirim token lewat cookie `HttpOnly` (`rp_access` untuk
+`/api`, `rp_refresh` untuk `/api/auth`); respons JSON tidak lagi memuat token.
+Klien browser cukup mengirim request dengan `credentials: 'include'`. Endpoint
+**protected** bisa juga memakai header `Authorization: Bearer <accessToken>`
+untuk klien non-browser.
 
 ### Health
 
@@ -84,10 +88,10 @@ Endpoint **protected** memerlukan header `Authorization: Bearer <accessToken>`.
 
 | Method | Endpoint | Akses | Keterangan |
 | :--- | :--- | :--- | :--- |
-| POST | `/api/auth/login` | Public (rate limited) | `{ email, password }` |
+| POST | `/api/auth/login` | Public (rate limited) | `{ email, password }`; set cookie sesi |
 | POST | `/api/auth/register` | SUPER_ADMIN | `{ email, password, name }` |
-| POST | `/api/auth/refresh` | Public | `{ refreshToken }`, token dirotasi |
-| POST | `/api/auth/logout` | Protected | `{ refreshToken }`, sesi dicabut |
+| POST | `/api/auth/refresh` | Public | Rotasi token dari cookie `rp_refresh` |
+| POST | `/api/auth/logout` | Public | Mencabut sesi + hapus cookie |
 | PUT | `/api/auth/password` | Protected | `{ currentPassword, newPassword }` |
 | GET | `/api/auth/me` | Protected | Data user dari database |
 

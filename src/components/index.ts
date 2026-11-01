@@ -1,4 +1,3 @@
-import { EarthCanvas, StarsCanvas, Hero3DCanvas, TechCanvas } from "./canvas";
 import Hero from "./sections/Hero";
 import Navbar from "./layout/Navbar";
 import About from "./sections/About";
@@ -20,9 +19,5 @@ export {
   Gallery,
   Feedbacks,
   Contact,
-  EarthCanvas,
-  StarsCanvas,
-  Hero3DCanvas,
-  TechCanvas,
   CommandMenu,
 };

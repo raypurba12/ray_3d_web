@@ -107,6 +107,7 @@ export type ContactMessagePayload = {
   name: string;
   email: string;
   message: string;
+  website?: string;
 };
 
 export const sendContactMessage = (payload: ContactMessagePayload) =>
