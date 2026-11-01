@@ -47,8 +47,8 @@ const ProjectsContent = () => {
               All Projects.
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-secondary sm:text-base">
-              Every published project from the CMS, with screenshots, tech
-              stack, demo videos, and source code links.
+              Every published project from the CMS, with the full case study,
+              tech stack, and demo or source links where available.
             </p>
           </div>
 
