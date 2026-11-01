@@ -58,7 +58,8 @@ default di kode maupun dokumentasi. Ganti juga `JWT_SECRET` dan
 | `DATABASE_URL` | `mysql://root:@localhost:3306/portfolio_cms` | Koneksi MySQL |
 | `JWT_SECRET` / `JWT_REFRESH_SECRET` | random 32+ chars | Wajib diisi, tanpa fallback |
 | `JWT_EXPIRE` / `JWT_REFRESH_EXPIRE` | `15m` / `30d` | Masa berlaku token |
-| `MAX_FILE_SIZE` | `5242880` | Batas upload (byte) |
+| `MAX_FILE_SIZE` | `5242880` | Batas upload gambar/PDF (byte) |
+| `MAX_VIDEO_FILE_SIZE` | `26214400` | Batas upload video demo MP4/WebM (byte) |
 | `UPLOAD_DIR` | `uploads` | Folder lokal untuk file upload; gunakan path absolut di produksi |
 | `CLOUDINARY_*` | — | Opsional; jika lengkap, upload disimpan ke Cloudinary |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | — | Kredensial admin untuk `prisma:seed`; wajib di produksi |
@@ -106,7 +107,7 @@ untuk klien non-browser.
 | DELETE | `/api/projects/:id` | Protected |
 | POST | `/api/projects/:id/upload` | Protected (multipart, field `image`) |
 
-Body project: `title`, `description`, `image`, `demoUrl?`, `githubUrl?`, `featured?`, `order?`, `technologies?` (array ID teknologi), `tags?` (array nama tag — dibuat otomatis beserta slug).
+Body project: `title`, `description`, `image`, `demoUrl?`, `githubUrl?`, `videoUrl?` (link YouTube/Vimeo atau path `/uploads/<file>`), `featured?`, `order?`, `technologies?` (array ID teknologi), `tags?` (array nama tag — dibuat otomatis beserta slug).
 
 ### Technologies
 
@@ -158,13 +159,15 @@ Body: `name`, `role`, `company`, `content`, `avatar?`, `rating?` (1–5), `featu
 | Method | Endpoint | Akses | Field multipart |
 | :--- | :--- | :--- | :--- |
 | POST | `/api/upload` | Protected | `file` |
+| POST | `/api/upload/video` | Protected | `file` (MP4/WebM, maks. 25MB) |
 | POST | `/api/upload/multiple` | Protected | `files` (maks. 10) |
 | DELETE | `/api/upload/:filename` | Protected | — |
 
 Tipe yang diterima: JPEG, PNG, WebP, GIF, dan PDF (SVG sengaja ditolak untuk
-mencegah stored XSS). Isi file diverifikasi lewat magic bytes dan harus cocok
-dengan MIME yang diklaim. Ukuran maksimum mengikuti `MAX_FILE_SIZE` (default
-5MB), maksimal 10 file per request, dan endpoint upload dibatasi 40 request/15
+mencegah stored XSS). Endpoint `/api/upload/video` khusus MP4/WebM dan memakai
+`MAX_VIDEO_FILE_SIZE` (default 25MB); isi file tetap diverifikasi lewat magic
+bytes. Ukuran maksimum upload gambar mengikuti `MAX_FILE_SIZE` (default 5MB),
+maksimal 10 file per request, dan endpoint upload dibatasi 40 request/15
 menit per user. File lokal disajikan di `/uploads/<filename>`.
 
 ## Data Conventions

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as uploadController from '../controllers/upload.controller';
 import { authenticate, requireAdmin } from '../middleware/auth';
 import { rateLimit } from '../middleware/rateLimit';
-import { uploadMultiple, uploadSingle } from '../middleware/upload';
+import { uploadMultiple, uploadSingle, uploadVideoFile } from '../middleware/upload';
 import type { AuthRequest } from '../types';
 
 const router = Router();
@@ -21,6 +21,14 @@ router.post(
   requireAdmin,
   uploadLimiter,
   uploadSingle,
+  uploadController.uploadSingleController
+);
+router.post(
+  '/video',
+  authenticate,
+  requireAdmin,
+  uploadLimiter,
+  uploadVideoFile.single('file'),
   uploadController.uploadSingleController
 );
 router.post(

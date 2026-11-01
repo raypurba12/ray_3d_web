@@ -8,7 +8,9 @@ import type {
   ProjectPayload,
 } from "../../../types/admin";
 import ImageField from "../ui/ImageField";
+import VideoField from "../ui/VideoField";
 import TechnologiesPicker from "../ui/TechnologiesPicker";
+import { parseVideoSource } from "../../../lib/video";
 import {
   buttonGhost,
   buttonPrimary,
@@ -50,6 +52,7 @@ const ProjectForm = ({
   const [metric, setMetric] = useState(initialProject?.metric ?? "");
   const [demoUrl, setDemoUrl] = useState(initialProject?.demoUrl ?? "");
   const [githubUrl, setGithubUrl] = useState(initialProject?.githubUrl ?? "");
+  const [videoUrl, setVideoUrl] = useState(initialProject?.videoUrl ?? "");
   const [featured, setFeatured] = useState(initialProject?.featured ?? false);
   const [order, setOrder] = useState(
     initialProject ? String(initialProject.order) : "0"
@@ -119,6 +122,11 @@ const ProjectForm = ({
       } punya caption tapi belum ada gambarnya.`;
     }
 
+    if (videoUrl.trim() && !parseVideoSource(videoUrl.trim())) {
+      nextErrors.videoUrl =
+        "Gunakan link YouTube/Vimeo atau file .mp4/.webm yang valid.";
+    }
+
     setClientErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -129,6 +137,7 @@ const ProjectForm = ({
       metric: metric.trim(),
       demoUrl: demoUrl.trim(),
       githubUrl: githubUrl.trim(),
+      videoUrl: videoUrl.trim(),
       featured,
       order: orderValue === "" ? 0 : Number(orderValue),
       tags: [
@@ -331,6 +340,13 @@ const ProjectForm = ({
           <FieldError message={errors.githubUrl} />
         </div>
       </div>
+
+      <VideoField
+        value={videoUrl}
+        error={errors.videoUrl}
+        onChange={setVideoUrl}
+        disabled={submitting}
+      />
 
       <div>
         <label className={labelClass} htmlFor="tags">

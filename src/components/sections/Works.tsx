@@ -7,6 +7,7 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  Play,
   X,
 } from "lucide-react";
 import Tilt from "react-parallax-tilt";
@@ -17,6 +18,7 @@ import { fadeIn } from "../../utils/motion";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { Header } from "../atoms/Header";
+import { parseVideoSource, type VideoSource } from "../../lib/video";
 import { TProject, TProjectImage } from "../../types";
 
 const lightboxButtonClass =
@@ -129,6 +131,82 @@ const ScreenshotLightbox = ({
   );
 };
 
+const ProjectVideoModal = ({
+  name,
+  source,
+  poster,
+  onClose,
+}: {
+  name: string;
+  source: VideoSource;
+  poster?: string;
+  onClose: () => void;
+}) => {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${name} demo video`}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md sm:p-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        aria-label="Close demo video"
+        onClick={onClose}
+        className={`${lightboxButtonClass} right-4 top-4`}
+      >
+        <X size={18} />
+      </button>
+
+      <figure className="w-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl">
+          {source.kind === "file" ? (
+            <video
+              src={source.url}
+              poster={poster}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              className="aspect-video w-full bg-black"
+            />
+          ) : (
+            <iframe
+              src={source.embedUrl}
+              title={`${name} demo video`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              loading="lazy"
+              className="aspect-video w-full"
+            />
+          )}
+        </div>
+        <figcaption className="mt-4 text-center font-mono text-xs text-white/50">
+          {name} — demo video
+        </figcaption>
+      </figure>
+    </div>,
+    document.body
+  );
+};
+
 const ProjectCard: React.FC<{ index: number } & TProject> = ({
   index,
   name,
@@ -137,12 +215,15 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
   image,
   sourceCodeLink,
   liveDemoLink,
+  videoLink,
   metric,
   images,
   featured,
 }) => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [videoOpen, setVideoOpen] = useState(false);
   const screenshots = images ?? [];
+  const videoSource = videoLink ? parseVideoSource(videoLink) : null;
 
   return (
     <motion.div variants={fadeIn("up", "spring", index * 0.15, 0.75)}>
@@ -175,6 +256,24 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
 
           {/* Ambient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#121216] via-transparent to-black/20 pointer-events-none" />
+
+          {/* Hover light sweep */}
+          <div
+            className="works-shine pointer-events-none absolute inset-0 z-[1]"
+            aria-hidden="true"
+          />
+
+          {videoSource && (
+            <button
+              type="button"
+              onClick={() => setVideoOpen(true)}
+              aria-label={`Play ${name} demo video`}
+              className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-2 rounded-full border border-acid/40 bg-black/70 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-acid backdrop-blur-md transition hover:scale-105 hover:bg-acid hover:text-black"
+            >
+              <Play size={11} className="fill-current" />
+              Demo video
+            </button>
+          )}
 
           {/* Status Badges */}
           <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2">
@@ -265,6 +364,15 @@ const ProjectCard: React.FC<{ index: number } & TProject> = ({
           index={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
           onChange={setLightboxIndex}
+        />
+      )}
+
+      {videoOpen && videoSource && (
+        <ProjectVideoModal
+          name={name}
+          source={videoSource}
+          poster={image || undefined}
+          onClose={() => setVideoOpen(false)}
         />
       )}
     </motion.div>

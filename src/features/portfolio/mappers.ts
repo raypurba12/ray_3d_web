@@ -110,6 +110,7 @@ export const mapProject = (project: PublicProject): TProject => ({
   image: project.image ? resolveAssetUrl(project.image) : "",
   sourceCodeLink: project.githubUrl ?? "",
   liveDemoLink: project.demoUrl ?? undefined,
+  videoLink: project.videoUrl ? resolveAssetUrl(project.videoUrl) : undefined,
   metric: project.metric ?? undefined,
   featured: project.featured,
   order: project.order,

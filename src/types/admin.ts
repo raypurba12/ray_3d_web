@@ -45,6 +45,7 @@ export type AdminProject = {
   metric: string | null;
   demoUrl: string | null;
   githubUrl: string | null;
+  videoUrl: string | null;
   featured: boolean;
   order: number;
   technologies: AdminTechnology[];
@@ -61,6 +62,7 @@ export type ProjectPayload = {
   metric: string;
   demoUrl: string;
   githubUrl: string;
+  videoUrl: string;
   featured: boolean;
   order: number;
   tags: string[];

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Quote, Star } from "lucide-react";
+import type { CSSProperties } from "react";
 
 import { fadeIn } from "../../utils/motion";
 import { Header } from "../atoms/Header";
@@ -21,7 +22,7 @@ const FeedbackCard: React.FC<{ index: number } & TTestimonial> = ({
   return (
   <motion.div
     variants={fadeIn("", "spring", index * 0.2, 0.75)}
-    className="bento-card flex w-full min-w-0 max-w-md flex-col justify-between rounded-2xl p-6 sm:p-8"
+    className="bento-card flex w-[80vw] max-w-[22rem] shrink-0 flex-col justify-between rounded-2xl p-6 sm:w-[22rem] sm:max-w-none sm:p-8"
   >
     <div>
       <div className="mb-4 flex items-center justify-between">
@@ -89,14 +90,34 @@ const Feedbacks = () => {
       </div>
 
       {testimonials.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {testimonials.map((testimonial, index) => (
-            <FeedbackCard
-              key={`${testimonial.name}-${index}`}
-              index={index}
-              {...testimonial}
-            />
-          ))}
+        <div className="marquee-viewport overflow-hidden">
+          <div
+            className="marquee-track flex w-max"
+            style={
+              {
+                "--marquee-shift": `${100 / Math.max(2, Math.ceil(8 / testimonials.length))}%`,
+              } as CSSProperties
+            }
+          >
+            {Array.from(
+              { length: Math.max(2, Math.ceil(8 / testimonials.length)) },
+              (_, copy) => (
+                <div
+                  key={copy}
+                  aria-hidden={copy > 0}
+                  className="flex shrink-0 gap-6 pr-6"
+                >
+                  {testimonials.map((testimonial, index) => (
+                    <FeedbackCard
+                      key={`${copy}-${testimonial.name}-${index}`}
+                      index={index}
+                      {...testimonial}
+                    />
+                  ))}
+                </div>
+              )
+            )}
+          </div>
         </div>
       ) : status === "loading" ? (
         <div className="bento-card rounded-2xl p-10 text-center">

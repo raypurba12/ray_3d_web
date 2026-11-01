@@ -30,6 +30,7 @@ export type PublicProject = {
   metric: string | null;
   demoUrl: string | null;
   githubUrl: string | null;
+  videoUrl: string | null;
   featured: boolean;
   order: number;
   tags: PublicTag[];

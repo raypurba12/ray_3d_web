@@ -34,7 +34,7 @@ export const configureCloudinary = (): void => {
 export const uploadToCloudinary = (
   buffer: Buffer,
   publicId: string,
-  resourceType: 'image' | 'raw' = 'image'
+  resourceType: 'image' | 'raw' | 'video' = 'image'
 ): Promise<UploadApiResponse> =>
   new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(

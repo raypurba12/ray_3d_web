@@ -57,6 +57,7 @@ model Project {
   images       ProjectImage[]
   demoUrl      String?
   githubUrl    String?
+  videoUrl     String?        @db.VarChar(500)
   featured     Boolean        @default(false)
   order        Int            @default(0)
   createdAt    DateTime       @default(now())

@@ -10,6 +10,8 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
 ]);
 
+const ALLOWED_VIDEO_MIME_TYPES = new Set(['video/mp4', 'video/webm']);
+
 export const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -20,6 +22,22 @@ export const upload = multer({
   fileFilter: (_req, file, cb) => {
     if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(new ApiError(400, 'Only JPEG, PNG, WebP, GIF, and PDF files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+export const uploadVideoFile = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: env.MAX_VIDEO_FILE_SIZE,
+    files: 1,
+    parts: 10,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (!ALLOWED_VIDEO_MIME_TYPES.has(file.mimetype)) {
+      cb(new ApiError(400, 'Only MP4 and WebM video files are allowed'));
       return;
     }
     cb(null, true);

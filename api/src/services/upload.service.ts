@@ -14,6 +14,8 @@ const EXTENSION_BY_MIME: Record<string, string> = {
   'image/webp': '.webp',
   'image/gif': '.gif',
   'application/pdf': '.pdf',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
 };
 
 const ALLOWED_MIME_TYPES = new Set(Object.keys(EXTENSION_BY_MIME));
@@ -52,6 +54,20 @@ const detectMimeType = (buffer: Buffer): string | null => {
     return 'application/pdf';
   }
 
+  if (buffer.length >= 8 && buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+    return 'video/mp4';
+  }
+
+  if (
+    buffer.length >= 4 &&
+    buffer[0] === 0x1a &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0xdf &&
+    buffer[3] === 0xa3
+  ) {
+    return 'video/webm';
+  }
+
   return null;
 };
 
@@ -65,7 +81,7 @@ const assertFileSignature = (file: Express.Multer.File) => {
   ) {
     throw new ApiError(
       400,
-      'File content does not match an allowed image or PDF type'
+      'File content does not match an allowed image, video, or PDF type'
     );
   }
 
@@ -81,10 +97,15 @@ export const storeImage = async (
 
   if (isCloudinaryEnabled()) {
     const isPdf = mime === 'application/pdf';
+    const resourceType = isPdf
+      ? 'raw'
+      : mime.startsWith('video/')
+        ? 'video'
+        : 'image';
     const result = await uploadToCloudinary(
       file.buffer,
-      isPdf ? filename : filename.replace(/\.[^.]+$/, ''),
-      isPdf ? 'raw' : 'image'
+      resourceType === 'image' ? filename.replace(/\.[^.]+$/, '') : filename,
+      resourceType
     );
     return {
       path: result.secure_url,

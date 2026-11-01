@@ -37,6 +37,7 @@ export type TProject = {
   image: string;
   sourceCodeLink: string;
   liveDemoLink?: string;
+  videoLink?: string;
   metric?: string;
   images?: TProjectImage[];
   featured?: boolean;

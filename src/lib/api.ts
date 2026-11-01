@@ -211,15 +211,17 @@ export const request = async <T>(
   return payload.data as T;
 };
 
-export const uploadFile = (
+const uploadAsset = (
+  endpoint: string,
   file: File,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  timeoutMs = UPLOAD_TIMEOUT_MS
 ): Promise<UploadedAsset> =>
   new Promise((resolve, reject) => {
     const send = (retried: boolean) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `${API_BASE}/upload`);
-      xhr.timeout = UPLOAD_TIMEOUT_MS;
+      xhr.open("POST", `${API_BASE}${endpoint}`);
+      xhr.timeout = timeoutMs;
       xhr.withCredentials = true;
 
       xhr.upload.onprogress = (event) => {
@@ -283,3 +285,14 @@ export const uploadFile = (
 
     send(false);
   });
+
+export const uploadFile = (
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<UploadedAsset> => uploadAsset("/upload", file, onProgress);
+
+export const uploadVideoFile = (
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<UploadedAsset> =>
+  uploadAsset("/upload/video", file, onProgress, 180000);

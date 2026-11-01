@@ -121,6 +121,75 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Testimonial marquee */
+.marquee-viewport {
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 5%,
+    #000 95%,
+    transparent
+  );
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+}
+
+.marquee-track {
+  animation: marquee-scroll 40s linear infinite;
+  will-change: transform;
+}
+
+.marquee-viewport:hover .marquee-track,
+.marquee-viewport:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(-1 * var(--marquee-shift, 50%)), 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+
+  .marquee-viewport {
+    overflow-x: auto;
+  }
+}
+
+/* Works card hover sweep */
+.works-shine::after {
+  content: "";
+  position: absolute;
+  top: -60%;
+  bottom: -60%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(212, 255, 0, 0.1),
+    transparent
+  );
+  transform: translateX(-160%) skewX(-12deg);
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .works-shine::after {
+  transform: translateX(320%) skewX(-12deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .works-shine {
+    display: none;
+  }
+}
+
 /* Canvas Loader */
 .canvas-loader {
   font-size: 10px;

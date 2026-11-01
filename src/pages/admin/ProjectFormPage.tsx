@@ -25,6 +25,7 @@ const PROJECT_FIELDS = new Set([
   "metric",
   "demoUrl",
   "githubUrl",
+  "videoUrl",
   "featured",
   "order",
   "technologies",

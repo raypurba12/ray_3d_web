@@ -33,6 +33,11 @@ const envSchema = z
       .int()
       .positive()
       .default(5 * 1024 * 1024),
+    MAX_VIDEO_FILE_SIZE: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(25 * 1024 * 1024),
     UPLOAD_DIR: z.string().min(1).default('./uploads'),
     CLOUDINARY_CLOUD_NAME: optionalString,
     CLOUDINARY_API_KEY: optionalString,

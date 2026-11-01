@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idList, optionalText, optionalUrl } from './common';
+import { idList, optionalAssetUrl, optionalText, optionalUrl } from './common';
 
 const projectImageSchema = z.object({
   image: z.string().trim().min(1, 'Screenshot image is required'),
@@ -13,6 +13,7 @@ export const createProjectSchema = z.object({
   metric: optionalText,
   demoUrl: optionalUrl,
   githubUrl: optionalUrl,
+  videoUrl: optionalAssetUrl,
   featured: z.boolean().optional(),
   order: z.coerce.number().int().optional(),
   technologies: idList,
