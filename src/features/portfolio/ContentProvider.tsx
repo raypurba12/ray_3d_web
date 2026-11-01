@@ -8,6 +8,7 @@ import {
   fetchGallery,
   fetchProfile,
   fetchProjects,
+  fetchSiteContent,
   fetchTechnologies,
   fetchTestimonials,
 } from "./api";
@@ -25,9 +26,10 @@ import {
   mapTestimonials,
   type PortfolioProfile,
 } from "./mappers";
+import { DEFAULT_SITE_CONTENT, resolveSiteContent } from "./site-content";
 
 const CACHE_KEY = "rp_content_v1";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 type CachedPayload = {
   version: number;
@@ -57,6 +59,7 @@ const createStaticContent = (): PortfolioContent => ({
   experiences: [],
   testimonials: [],
   gallery: [],
+  site: DEFAULT_SITE_CONTENT,
 });
 
 const isContentShape = (value: unknown): value is PortfolioContent => {
@@ -69,7 +72,8 @@ const isContentShape = (value: unknown): value is PortfolioContent => {
     Array.isArray(candidate.technologies) &&
     Array.isArray(candidate.experiences) &&
     Array.isArray(candidate.testimonials) &&
-    Array.isArray(candidate.gallery)
+    Array.isArray(candidate.gallery) &&
+    Boolean(candidate.site)
   );
 };
 
@@ -110,12 +114,13 @@ const fetchAll = () =>
     fetchExperiences(),
     fetchTestimonials(),
     fetchGallery(),
+    fetchSiteContent(),
   ]);
 
 type SettledResults = Awaited<ReturnType<typeof fetchAll>>;
 
 const mergeResults = (previous: PortfolioContent, results: SettledResults) => {
-  const [profile, projects, technologies, experiences, testimonials, gallery] =
+  const [profile, projects, technologies, experiences, testimonials, gallery, site] =
     results;
 
   let succeeded = 0;
@@ -143,6 +148,10 @@ const mergeResults = (previous: PortfolioContent, results: SettledResults) => {
   }
   if (gallery.status === "fulfilled") {
     content.gallery = mapGallery(gallery.value);
+    succeeded += 1;
+  }
+  if (site.status === "fulfilled") {
+    content.site = resolveSiteContent(site.value);
     succeeded += 1;
   }
 

@@ -5,6 +5,7 @@ import { AuthProvider } from "./features/admin/auth/AuthProvider";
 import { ProtectedRoute } from "./features/admin/auth/ProtectedRoute";
 import PortfolioPage from "./pages/PortfolioPage";
 
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AccountPage = lazy(() => import("./pages/admin/AccountPage"));
@@ -19,6 +20,7 @@ const GalleryFormPage = lazy(() => import("./pages/admin/GalleryFormPage"));
 const GalleryListPage = lazy(() => import("./pages/admin/GalleryListPage"));
 const MessagesPage = lazy(() => import("./pages/admin/MessagesPage"));
 const ProfilePage = lazy(() => import("./pages/admin/ProfilePage"));
+const SiteContentPage = lazy(() => import("./pages/admin/SiteContentPage"));
 const ProjectFormPage = lazy(() => import("./pages/admin/ProjectFormPage"));
 const ProjectsListPage = lazy(() => import("./pages/admin/ProjectsListPage"));
 const TechnologiesListPage = lazy(
@@ -38,6 +40,7 @@ const App = () => (
   <AuthProvider>
     <Routes>
       <Route path="/" element={<PortfolioPage />} />
+      <Route path="/projects" element={<ProjectsPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
@@ -73,6 +76,7 @@ const App = () => (
             element={<TestimonialFormPage />}
           />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="site-content" element={<SiteContentPage />} />
           <Route path="messages" element={<MessagesPage />} />
           <Route path="account" element={<AccountPage />} />
         </Route>

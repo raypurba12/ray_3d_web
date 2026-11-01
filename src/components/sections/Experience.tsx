@@ -11,7 +11,6 @@ import "react-vertical-timeline-component/style.min.css";
 import { SectionWrapper } from "../../hoc";
 import { Header } from "../atoms/Header";
 import { TExperience } from "../../types";
-import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 
 const ExperienceCard: React.FC<TExperience> = (experience) => {
@@ -128,7 +127,7 @@ const FloatingStar = ({ delay = 0, duration = 3, x = 0, y = 0 }) => {
 const Experience = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [progressValue, setProgressValue] = React.useState(0);
-  const { experiences, status } = usePortfolioContent();
+  const { experiences, site, status } = usePortfolioContent();
 
   // Scroll progress for this section
   const { scrollYProgress } = useScroll({
@@ -186,7 +185,11 @@ const Experience = () => {
         </div>
       </motion.div>
 
-      <Header useMotion={true} {...config.sections.experience} />
+      <Header
+        useMotion={true}
+        p={site.sections.experience.label}
+        h2={site.sections.experience.title}
+      />
 
       {experiences.length > 0 ? (
         <div className="mt-14 flex flex-col relative">

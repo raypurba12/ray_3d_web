@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   motion,
   useMotionValue,
@@ -106,8 +107,8 @@ export const CustomCursor = () => {
 
   if (!enabled) return null;
 
-  return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-[100]">
+  return createPortal(
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[200]">
       {/* Click Ripples */}
       <AnimatePresence>
         {ripples.map((ripple) => (
@@ -157,7 +158,8 @@ export const CustomCursor = () => {
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         />
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

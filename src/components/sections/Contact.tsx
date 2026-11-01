@@ -29,7 +29,7 @@ const Contact = () => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-  const { profile } = usePortfolioContent();
+  const { profile, site } = usePortfolioContent();
   const contactEmail = profile.email || config.html.email;
 
   useEffect(
@@ -113,7 +113,11 @@ const Contact = () => {
         className="bento-card flex-[0.8] rounded-2xl p-6 sm:p-10 relative overflow-hidden flex flex-col justify-between"
       >
         <div>
-          <Header useMotion={false} {...config.contact} />
+          <Header
+            useMotion={false}
+            p={site.contact.label}
+            h2={site.contact.title}
+          />
 
           <form
             ref={formRef}

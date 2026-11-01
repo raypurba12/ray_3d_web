@@ -11,7 +11,7 @@ const lightboxButtonClass =
   "absolute z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/80 backdrop-blur transition hover:bg-white/10 hover:text-white";
 
 const GalleryContent = () => {
-  const { gallery } = usePortfolioContent();
+  const { gallery, site } = usePortfolioContent();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const close = useCallback(() => setActiveIndex(null), []);
@@ -56,7 +56,11 @@ const GalleryContent = () => {
 
   return (
     <>
-      <Header useMotion={true} p="// VISUAL ARCHIVE" h2="Gallery." />
+      <Header
+        useMotion={true}
+        p={site.sections.gallery.label}
+        h2={site.sections.gallery.title}
+      />
 
       <motion.p
         initial={{ opacity: 0, y: 10 }}
@@ -65,7 +69,7 @@ const GalleryContent = () => {
         transition={{ duration: 0.6 }}
         className="mt-3 max-w-3xl text-sm leading-relaxed text-secondary sm:text-base"
       >
-        Selected frames from 3D experiments, client builds, and visual studies.
+        {site.sections.gallery.content}
       </motion.p>
 
       <div className="mt-10 columns-1 gap-4 sm:columns-2 lg:columns-3">

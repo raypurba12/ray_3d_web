@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   Briefcase,
   Cpu,
+  FileText,
   FolderKanban,
   Images,
   KeyRound,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { to: "/admin/experiences", end: false, icon: Briefcase, label: "Experiences" },
   { to: "/admin/technologies", end: false, icon: Cpu, label: "Technologies" },
   { to: "/admin/testimonials", end: false, icon: Quote, label: "Testimonials" },
+  { to: "/admin/site-content", end: false, icon: FileText, label: "Site Content" },
   { to: "/admin/profile", end: false, icon: UserRound, label: "Profile" },
   { to: "/admin/account", end: false, icon: KeyRound, label: "Account" },
 ] as const;

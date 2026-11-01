@@ -43,7 +43,7 @@ const useDeferredHero3D = () => {
 };
 
 const Hero = () => {
-  const { profile, status } = usePortfolioContent();
+  const { profile, site, status } = usePortfolioContent();
   const show3D = useDeferredHero3D();
 
   return (
@@ -73,7 +73,7 @@ const Hero = () => {
             <span className="relative inline-flex rounded-full h-2 w-2 bg-acid"></span>
           </span>
           <span className="font-mono text-[11px] text-white/90 font-medium tracking-wide sm:text-xs">
-            Available for new projects & creative roles
+            {site.hero.badge}
           </span>
         </div>
 
@@ -81,14 +81,14 @@ const Hero = () => {
         <div className="max-w-4xl">
           <p className="font-mono text-xs sm:text-sm text-acid uppercase tracking-[0.25em] mb-3 flex items-center gap-2">
             <Terminal size={14} className="text-acid" />
-            <span>Creative Developer & WebGL Architect</span>
+            <span>{site.hero.eyebrow}</span>
           </p>
           <h1 className={`${styles.heroHeadText}`}>
-            Transforming ideas into <br className="hidden sm:inline" />
-            <span className="acid-gradient-text">spatial digital experiences.</span>
+            {site.hero.title} <br className="hidden sm:inline" />
+            <span className="acid-gradient-text">{site.hero.titleAccent}</span>
           </h1>
           <p className={`${styles.heroSubText} text-white/70 mt-5`}>
-            Hi, I'm <strong className="text-white font-semibold">{profile.name || config.hero.name}</strong>. {config.hero.p[0]} {config.hero.p[1]}
+            Hi, I'm <strong className="text-white font-semibold">{profile.name || config.hero.name}</strong>. {site.hero.intro}
           </p>
         </div>
 

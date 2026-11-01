@@ -15,6 +15,7 @@ import technologiesRoutes from './routes/technologies.routes';
 import experiencesRoutes from './routes/experiences.routes';
 import testimonialsRoutes from './routes/testimonials.routes';
 import profileRoutes from './routes/profile.routes';
+import siteContentRoutes from './routes/site-content.routes';
 import uploadRoutes from './routes/upload.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import contactRoutes from './routes/contact.routes';
@@ -149,6 +150,7 @@ const PUBLIC_CONTENT_PREFIXES = [
   '/api/testimonials',
   '/api/profile',
   '/api/gallery',
+  '/api/site-content',
 ];
 
 app.use((req, res, next) => {
@@ -185,6 +187,7 @@ app.use('/api/technologies', technologiesRoutes);
 app.use('/api/experiences', experiencesRoutes);
 app.use('/api/testimonials', testimonialsRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/site-content', siteContentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/contact', contactRoutes);

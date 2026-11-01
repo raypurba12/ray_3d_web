@@ -3,7 +3,6 @@ import { MousePointer } from "lucide-react";
 
 import { DeferredCanvas } from "../canvas/DeferredCanvas";
 import { SectionWrapper } from "../../hoc";
-import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { useFinePointer } from "../../hooks/useMediaQuery";
 import { Header } from "../atoms/Header";
@@ -12,11 +11,15 @@ const TechCanvas = lazy(() => import("../canvas/TechCanvas"));
 
 const Tech = () => {
   const finePointer = useFinePointer();
-  const { technologies, status } = usePortfolioContent();
+  const { technologies, site, status } = usePortfolioContent();
 
   return (
     <>
-      <Header useMotion={true} {...config.sections.tech} />
+      <Header
+        useMotion={true}
+        p={site.sections.tech.label}
+        h2={site.sections.tech.title}
+      />
 
       <div className="mt-3 flex max-w-4xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <p className="text-secondary text-sm sm:text-base leading-relaxed">

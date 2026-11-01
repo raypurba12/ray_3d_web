@@ -14,7 +14,11 @@ type TConfig = {
   };
   hero: {
     name: string;
-    p: string[];
+    badge: string;
+    eyebrow: string;
+    title: string;
+    titleAccent: string;
+    intro: string;
   };
   contact: {
     form: {
@@ -32,10 +36,15 @@ type TConfig = {
       };
     };
   } & TSection;
+  footer: {
+    tagline: string;
+    note: string;
+  };
   sections: {
     about: Required<TSection>;
     experience: TSection;
     tech: TSection;
+    gallery: Required<TSection>;
     feedbacks: TSection;
     works: Required<TSection>;
   };
@@ -49,10 +58,16 @@ export const config: TConfig = {
   },
   hero: {
     name: "Ray Purba",
-    p: [
-      "Crafting high-impact 3D web experiences,",
-      "resilient frontend architectures, and fluid interactions.",
-    ],
+    badge: "Available for new projects & creative roles",
+    eyebrow: "Creative Developer & WebGL Architect",
+    title: "Transforming ideas into",
+    titleAccent: "spatial digital experiences.",
+    intro:
+      "Crafting high-impact 3D web experiences, resilient frontend architectures, and fluid interactions.",
+  },
+  footer: {
+    tagline: "Portfolio Architecture",
+    note: "Designed & engineered with React, Three.js, and TypeScript.",
   },
   contact: {
     p: "// INITIATE TRANSMISSION",
@@ -85,6 +100,11 @@ export const config: TConfig = {
     tech: {
       p: "// TECHNICAL ARSENAL",
       h2: "Tech Stack.",
+    },
+    gallery: {
+      p: "// VISUAL ARCHIVE",
+      h2: "Gallery.",
+      content: `Selected frames from 3D experiments, client builds, and visual studies.`,
     },
     feedbacks: {
       p: "// TESTIMONIALS",

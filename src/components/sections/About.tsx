@@ -12,7 +12,6 @@ import {
 
 import { SectionWrapper } from "../../hoc";
 import { fadeIn } from "../../utils/motion";
-import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { Header } from "../atoms/Header";
 import { DeferredCanvas } from "../canvas/DeferredCanvas";
@@ -23,7 +22,7 @@ const AmbientGeometryCanvas = lazy(
 
 const About = () => {
   const [time, setTime] = useState("");
-  const { profile, technologies } = usePortfolioContent();
+  const { profile, site, technologies } = usePortfolioContent();
 
   const initials =
     (profile.name || "Ray Purba")
@@ -64,13 +63,17 @@ const About = () => {
         </DeferredCanvas>
       </div>
 
-      <Header useMotion={true} {...config.sections.about} />
+      <Header
+        useMotion={true}
+        p={site.sections.about.label}
+        h2={site.sections.about.title}
+      />
 
       <motion.p
         variants={fadeIn("", "", 0.1, 1)}
         className="text-secondary mt-3 max-w-3xl text-sm sm:text-base leading-relaxed"
       >
-        {profile.bio || config.sections.about.content}
+        {profile.bio || site.sections.about.content}
       </motion.p>
 
       {/* Bento Grid Architecture */}

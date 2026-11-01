@@ -26,18 +26,18 @@ import { registerLenis, scrollToId } from "../utils/scrollTo";
 const StarsCanvas = lazy(() => import("../components/canvas/Stars"));
 
 const PortfolioFooter = () => {
-  const { profile } = usePortfolioContent();
+  const { profile, site } = usePortfolioContent();
 
   return (
     <footer className="relative z-10 border-t border-white/5 py-10 px-6 sm:px-16 mt-16 bg-[#09090b]/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-white/40">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-acid" />
-          <span>{profile.name || "Ray Purba"} Portfolio Architecture</span>
+          <span>
+            {profile.name || "Ray Purba"} {site.footer.tagline}
+          </span>
         </div>
-        <div>
-          Designed & engineered with React, Three.js, and TypeScript.
-        </div>
+        <div>{site.footer.note}</div>
         <div>© {new Date().getFullYear()} All rights reserved.</div>
       </div>
     </footer>

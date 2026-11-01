@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { motion, useScroll, useSpring } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import { navLinks } from "../../constants";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 
 const Navbar = () => {
   const { gallery } = usePortfolioContent();
+  const { pathname } = useLocation();
+  const homePrefix = pathname === "/" ? "" : "/";
+  const sectionHref = (id: string) => `${homePrefix}#${id}`;
   const links =
     gallery.length > 0
       ? navLinks
@@ -93,7 +97,7 @@ const Navbar = () => {
 
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 sm:px-16">
         {/* Brand Monogram */}
-        <a href="#top" className="flex items-center gap-2 group">
+        <a href={`${homePrefix}#top`} className="flex items-center gap-2 group">
           <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-display font-bold text-white text-base group-hover:border-acid transition-colors">
             R<span className="text-acid">.</span>
           </div>
@@ -107,7 +111,7 @@ const Navbar = () => {
           {links.map((nav) => (
             <a
               key={nav.id}
-              href={`#${nav.id}`}
+              href={sectionHref(nav.id)}
               className={`px-4 py-1.5 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 ${active === nav.id
                   ? "bg-white/10 text-white font-medium border border-white/15"
                   : "text-white/60 hover:text-white"
@@ -121,7 +125,7 @@ const Navbar = () => {
         {/* Contact CTA */}
         <div className="hidden lg:flex items-center gap-3">
           <a
-            href="#contact"
+            href={sectionHref("contact")}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider text-white/90 bg-white/[0.05] border border-white/10 hover:border-acid hover:text-acid transition-all duration-200"
           >
             <span>Let's Talk</span>
@@ -153,7 +157,7 @@ const Navbar = () => {
               {links.map((nav) => (
                 <a
                   key={nav.id}
-                  href={`#${nav.id}`}
+                  href={sectionHref(nav.id)}
                   onClick={() => setToggle(false)}
                   className={`px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-colors ${active === nav.id
                       ? "bg-white/10 text-acid font-semibold"
@@ -165,7 +169,7 @@ const Navbar = () => {
               ))}
               <hr className="border-white/10 my-1" />
               <a
-                href="#contact"
+                href={sectionHref("contact")}
                 onClick={() => setToggle(false)}
                 className="px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider text-center bg-acid text-black font-semibold"
               >

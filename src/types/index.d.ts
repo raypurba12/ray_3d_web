@@ -66,3 +66,31 @@ export type TMotion = {
   delay: number;
   duration: number;
 };
+
+export type SiteSectionCopy = {
+  label: string;
+  title: string;
+};
+
+export type SiteContent = {
+  hero: {
+    badge: string;
+    eyebrow: string;
+    title: string;
+    titleAccent: string;
+    intro: string;
+  };
+  sections: {
+    about: SiteSectionCopy & { content: string };
+    experience: SiteSectionCopy;
+    tech: SiteSectionCopy;
+    works: SiteSectionCopy & { content: string };
+    gallery: SiteSectionCopy & { content: string };
+    feedbacks: SiteSectionCopy;
+  };
+  contact: SiteSectionCopy;
+  footer: {
+    tagline: string;
+    note: string;
+  };
+};

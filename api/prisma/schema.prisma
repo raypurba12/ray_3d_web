@@ -231,3 +231,12 @@ model Profile {
 
   @@map("profile")
 }
+
+// Editable landing-page copy (key/value JSON, one row per section)
+model SiteSetting {
+  key       String   @id @db.VarChar(64)
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

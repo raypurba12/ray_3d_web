@@ -104,6 +104,9 @@ export const fetchTestimonials = () =>
 export const fetchGallery = () =>
   request<PublicGalleryImage[]>("/gallery", { auth: false });
 
+export const fetchSiteContent = () =>
+  request<unknown>("/site-content", { auth: false });
+
 export type ContactMessagePayload = {
   name: string;
   email: string;

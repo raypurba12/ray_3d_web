@@ -5,7 +5,6 @@ import type { CSSProperties } from "react";
 import { fadeIn } from "../../utils/motion";
 import { Header } from "../atoms/Header";
 import { TTestimonial } from "../../types";
-import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 
 const FeedbackCard: React.FC<{ index: number } & TTestimonial> = ({
@@ -81,12 +80,16 @@ const FeedbackCard: React.FC<{ index: number } & TTestimonial> = ({
 };
 
 const Feedbacks = () => {
-  const { testimonials, status } = usePortfolioContent();
+  const { testimonials, site, status } = usePortfolioContent();
 
   return (
     <div className="mx-auto max-w-7xl w-full py-10 sm:py-16 px-6 sm:px-16">
       <div className="mb-10">
-        <Header useMotion={true} {...config.sections.feedbacks} />
+        <Header
+          useMotion={true}
+          p={site.sections.feedbacks.label}
+          h2={site.sections.feedbacks.title}
+        />
       </div>
 
       {testimonials.length > 0 ? (

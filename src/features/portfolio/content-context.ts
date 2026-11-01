@@ -1,6 +1,7 @@
 import { createContext, useContext } from "react";
 
 import type {
+  SiteContent,
   TExperience,
   TGalleryImage,
   TProject,
@@ -18,6 +19,7 @@ export type PortfolioContent = {
   experiences: TExperience[];
   testimonials: TTestimonial[];
   gallery: TGalleryImage[];
+  site: SiteContent;
 };
 
 export type PortfolioContentValue = PortfolioContent & {
