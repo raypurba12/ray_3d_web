@@ -184,8 +184,8 @@ const main = async () => {
     process.exit(2);
   }
 
-  const email = envValue('ADMIN_EMAIL');
-  const password = envValue('ADMIN_PASSWORD');
+  const email = process.env.VERIFY_EMAIL || envValue('ADMIN_EMAIL');
+  const password = process.env.VERIFY_PASSWORD || envValue('ADMIN_PASSWORD');
 
   console.log(`Verifikasi ${BASE_URL}`);
   console.log('');
