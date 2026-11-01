@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import App from "./App";
 import { ErrorBoundary } from "./components/system/ErrorBoundary";
+import "./fonts.css";
 import "./globals.css";
 
 const RouteFallback = () => (

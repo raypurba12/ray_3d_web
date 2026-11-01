@@ -1,5 +1,4 @@
-import { lazy, Suspense } from "react";
-import { motion } from "framer-motion";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUpRight, Download, Terminal, MousePointer } from "lucide-react";
 import { styles } from "../../constants/styles";
 import { config } from "../../constants/config";
@@ -9,34 +8,66 @@ import { Magnetic } from "../atoms/Magnetic";
 
 const Hero3DCanvas = lazy(() => import("../canvas/Hero3D"));
 
+const INTERACTION_EVENTS = [
+  "pointerdown",
+  "touchstart",
+  "keydown",
+  "wheel",
+] as const;
+
+const useDeferredHero3D = () => {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    const connection = (
+      navigator as Navigator & { connection?: { saveData?: boolean } }
+    ).connection;
+
+    if (reduceMotion || connection?.saveData) return;
+
+    const activate = () => setEnabled(true);
+    INTERACTION_EVENTS.forEach((event) =>
+      window.addEventListener(event, activate, { once: true, passive: true })
+    );
+
+    return () =>
+      INTERACTION_EVENTS.forEach((event) =>
+        window.removeEventListener(event, activate)
+      );
+  }, []);
+
+  return enabled;
+};
+
 const Hero = () => {
   const { profile } = usePortfolioContent();
+  const show3D = useDeferredHero3D();
 
   return (
     <section
       id="top"
       className="hero-screen relative mx-auto w-full flex flex-col justify-between overflow-hidden bg-primary pt-24 pb-10 sm:pt-28 sm:pb-12"
     >
-      {/* Dynamic 3D WebGL Canvas Layer */}
-      <Suspense fallback={null}>
-        <Hero3DCanvas
-          identity={{
-            name: profile.name,
-            tagline: profile.tagline,
-            avatarUrl: profile.avatar,
-          }}
-        />
-      </Suspense>
+      {/* Loaded after first interaction so WebGL never delays first paint. */}
+      {show3D && (
+        <Suspense fallback={null}>
+          <Hero3DCanvas
+            identity={{
+              name: profile.name,
+              tagline: profile.tagline,
+              avatarUrl: profile.avatar,
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Hero Foreground Content */}
       <div className={`relative z-10 mx-auto max-w-7xl w-full ${styles.paddingX} flex-1 flex flex-col justify-center pointer-events-none`}>
         {/* Status Pill Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md w-fit mb-6 pointer-events-auto"
-        >
+        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md w-fit mb-6 pointer-events-auto">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-acid opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-acid"></span>
@@ -44,15 +75,10 @@ const Hero = () => {
           <span className="font-mono text-[11px] text-white/90 font-medium tracking-wide sm:text-xs">
             Available for new projects & creative roles
           </span>
-        </motion.div>
+        </div>
 
         {/* Main Headline */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="max-w-4xl"
-        >
+        <div className="max-w-4xl">
           <p className="font-mono text-xs sm:text-sm text-acid uppercase tracking-[0.25em] mb-3 flex items-center gap-2">
             <Terminal size={14} className="text-acid" />
             <span>Creative Developer & WebGL Architect</span>
@@ -64,15 +90,10 @@ const Hero = () => {
           <p className={`${styles.heroSubText} text-white/70 mt-5`}>
             Hi, I'm <strong className="text-white font-semibold">{profile.name || config.hero.name}</strong>. {config.hero.p[0]} {config.hero.p[1]}
           </p>
-        </motion.div>
+        </div>
 
         {/* Interactive Action CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.25 }}
-          className="flex flex-col items-stretch gap-3 mt-8 pointer-events-auto xs:flex-row xs:flex-wrap xs:items-center xs:gap-4"
-        >
+        <div className="flex flex-col items-stretch gap-3 mt-8 pointer-events-auto xs:flex-row xs:flex-wrap xs:items-center xs:gap-4">
           <Magnetic className="w-full xs:w-auto">
             <a
               href="#work"
@@ -116,7 +137,7 @@ const Hero = () => {
             <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono text-[10px]">K</kbd>
             <span className="ml-1 text-white/60">Command menu</span>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Minimalist Bottom Bar: Interactive Cue & Scroll Indicator */}

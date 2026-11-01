@@ -307,6 +307,8 @@ const About = () => {
             <img
               src={profile.avatar}
               alt={profile.name || "Portrait"}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
             />
           ) : (

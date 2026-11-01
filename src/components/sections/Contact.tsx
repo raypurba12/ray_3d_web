@@ -243,6 +243,8 @@ const Contact = () => {
             <img
               src={profile.avatar}
               alt={profile.name || "Profile photo"}
+              loading="lazy"
+              decoding="async"
               className="h-12 w-12 shrink-0 rounded-xl border border-white/10 object-cover"
             />
             <div className="min-w-0">
