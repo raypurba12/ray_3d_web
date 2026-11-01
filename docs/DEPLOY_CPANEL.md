@@ -227,12 +227,18 @@ Cek end-to-end (health, cache, cookie HttpOnly, refresh rotation, CRUD, upload,
 logout) tanpa menampilkan token:
 
 ```bash
-/opt/alt/alt-nodejs22/root/usr/bin/node "$HOME/ray3d-ops/verify-prod.js"
+VERIFY_DIRECT_API=http://127.0.0.1:5055/api \
+  /opt/alt/alt-nodejs22/root/usr/bin/node "$HOME/ray3d-ops/verify-prod.js"
 ```
 
 Script membaca `ADMIN_EMAIL`/`ADMIN_PASSWORD` dari `~/ray3d-app/api/.env`.
 Bisa dioverride lewat `VERIFY_EMAIL`/`VERIFY_PASSWORD`, dan domain lewat
-`VERIFY_BASE_URL` (default `https://raypurba.my.id`).
+`VERIFY_BASE_URL` (default `https://raypurba.my.id`). `VERIFY_DIRECT_API`
+memeriksa header yang dihapus proxy hosting (mis. `Cache-Control`) langsung ke
+port loopback.
+
+Jika login 401, samakan `ADMIN_PASSWORD` di `api/.env` dengan password admin
+aktif di `~/ray-3d-admin-credentials.txt`; verifier memakai nilai dari `.env`.
 
 Script membuat satu proyek uji, mengunggah PNG 1x1, lalu menghapus proyek dan
 file tersebut kembali. Semua baris harus `PASS`; exit code selain 0 berarti ada

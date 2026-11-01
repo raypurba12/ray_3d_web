@@ -12,6 +12,8 @@
  *   VERIFY_EMAIL         override ADMIN_EMAIL
  *   VERIFY_PASSWORD      override ADMIN_PASSWORD
  *   VERIFY_ENV_FILE      path to the API .env file
+ *   VERIFY_DIRECT_API    e.g. http://127.0.0.1:5055/api to test headers the
+ *                        hosting proxy strips (Cache-Control)
  *   VERIFY_SKIP_FRONTEND set to 1 to skip docroot checks (local API only)
  *   VERIFY_ALLOW_INSECURE set to 1 to allow cookies without Secure (local HTTP)
  *
@@ -28,6 +30,7 @@ const API_URL = `${BASE_URL}/api`;
 const TIMEOUT_MS = 20_000;
 const SKIP_FRONTEND = process.env.VERIFY_SKIP_FRONTEND === '1';
 const ALLOW_INSECURE = process.env.VERIFY_ALLOW_INSECURE === '1';
+const DIRECT_API_URL = (process.env.VERIFY_DIRECT_API || '').replace(/\/+$/, '');
 
 const PNG_1X1 = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
@@ -195,7 +198,7 @@ const main = async () => {
   );
   check(
     'header keamanan API',
-    health.headers.get('x-content-type-options') === 'nosniff' &&
+    /nosniff/i.test(health.headers.get('x-content-type-options') || '') &&
       health.headers.get('x-powered-by') === null,
     'X-Content-Type-Options atau X-Powered-By tidak sesuai'
   );
@@ -208,11 +211,41 @@ const main = async () => {
   );
 
   const cache = projects.headers.get('cache-control') || '';
-  check(
-    'cache konten publik',
-    /public/.test(cache) && /max-age=30/.test(cache),
-    `Cache-Control: ${cache || '(kosong)'}`
-  );
+  if (cache) {
+    check(
+      'cache konten publik',
+      /public/.test(cache) && /max-age=30/.test(cache),
+      `Cache-Control: ${cache}`
+    );
+  } else {
+    skip('cache konten publik', 'Cache-Control dihapus oleh proxy hosting');
+  }
+
+  if (DIRECT_API_URL) {
+    try {
+      const direct = await fetch(`${DIRECT_API_URL}/projects`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      const directCache = direct.headers.get('cache-control') || '';
+      check(
+        'cache konten publik (API langsung)',
+        /public/.test(directCache) && /max-age=30/.test(directCache),
+        `Cache-Control: ${directCache || '(kosong)'}`
+      );
+      check(
+        'header keamanan API (langsung)',
+        /nosniff/i.test(direct.headers.get('x-content-type-options') || '') &&
+          direct.headers.get('x-powered-by') === null,
+        'header tidak sesuai'
+      );
+    } catch (error) {
+      fail(
+        'API langsung',
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
 
   if (SKIP_FRONTEND) {
     skip('docroot frontend', 'VERIFY_SKIP_FRONTEND=1');
