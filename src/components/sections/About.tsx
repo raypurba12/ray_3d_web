@@ -57,7 +57,7 @@ const About = () => {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <DeferredCanvas className="h-full w-full" rootMargin="0px">
+        <DeferredCanvas className="h-full w-full" rootMargin="-10% 0px">
           <Suspense fallback={null}>
             <AmbientGeometryCanvas />
           </Suspense>
