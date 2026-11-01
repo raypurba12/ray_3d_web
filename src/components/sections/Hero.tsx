@@ -43,7 +43,7 @@ const useDeferredHero3D = () => {
 };
 
 const Hero = () => {
-  const { profile } = usePortfolioContent();
+  const { profile, status } = usePortfolioContent();
   const show3D = useDeferredHero3D();
 
   return (
@@ -116,7 +116,7 @@ const Hero = () => {
             </a>
           </Magnetic>
 
-          {profile.resumeUrl && (
+          {profile.resumeUrl ? (
             <Magnetic className="w-full xs:w-auto">
               <a
                 href={profile.resumeUrl}
@@ -129,7 +129,14 @@ const Hero = () => {
                 <span>Download CV</span>
               </a>
             </Magnetic>
-          )}
+          ) : status === "loading" ? (
+            <span aria-hidden className="invisible w-full xs:w-auto">
+              <span className="inline-flex w-full xs:w-auto items-center justify-center gap-2 px-6 py-3 rounded-full border border-white/10 text-sm font-medium">
+                <Download size={16} />
+                <span>Download CV</span>
+              </span>
+            </span>
+          ) : null}
 
           <div className="hidden lg:flex items-center gap-2 px-3.5 py-2 rounded-lg bg-black/40 border border-white/5 font-mono text-xs text-white/50">
             <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white/80 font-mono text-[10px]">Ctrl</kbd>
