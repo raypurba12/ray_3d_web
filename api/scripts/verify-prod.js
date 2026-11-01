@@ -413,7 +413,7 @@ const main = async () => {
           'Catatan verifikasi otomatis jalur tulis API. Aman untuk dihapus.',
         image: '/uploads/verify-prod-placeholder.png',
         technologies: [],
-        tags: ['verifikasi'],
+        tags: [],
       },
     });
     projectId = created.json?.data?.id;
