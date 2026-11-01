@@ -237,8 +237,10 @@ Bisa dioverride lewat `VERIFY_EMAIL`/`VERIFY_PASSWORD`, dan domain lewat
 memeriksa header yang dihapus proxy hosting (mis. `Cache-Control`) langsung ke
 port loopback.
 
-Jika login 401, samakan `ADMIN_PASSWORD` di `api/.env` dengan password admin
-aktif di `~/ray-3d-admin-credentials.txt`; verifier memakai nilai dari `.env`.
+Jika login 401, `ADMIN_PASSWORD` di `api/.env` dan file kredensial bisa sudah
+stale. Samakan dengan password admin yang benar-benar aktif; jika lupa, reset
+hash lewat Prisma lalu perbarui `.env` dan file kredensial. Verifier memakai
+nilai `.env` kecuali dioverride `VERIFY_EMAIL`/`VERIFY_PASSWORD`.
 
 Script membuat satu proyek uji, mengunggah PNG 1x1, lalu menghapus proyek dan
 file tersebut kembali. Semua baris harus `PASS`; exit code selain 0 berarti ada
