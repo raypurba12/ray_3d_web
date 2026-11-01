@@ -46,7 +46,7 @@ const Works = () => {
               to="/projects"
               className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 font-mono text-xs uppercase tracking-wider text-white/90 transition hover:border-acid/60 hover:bg-acid hover:text-black"
             >
-              {hasMore ? "Lihat semua proyek" : "Buka halaman proyek"}
+              Lihat semua proyek
               <ArrowUpRight
                 size={15}
                 className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
