@@ -239,6 +239,16 @@ const main = async () => {
           direct.headers.get('x-powered-by') === null,
         'header tidak sesuai'
       );
+
+      const directAuth = await fetch(`${DIRECT_API_URL}/auth/me`, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      check(
+        'cache auth no-store (API langsung)',
+        /no-store/.test(directAuth.headers.get('cache-control') || ''),
+        `Cache-Control: ${directAuth.headers.get('cache-control') || '(kosong)'}`
+      );
     } catch (error) {
       fail(
         'API langsung',
@@ -314,11 +324,16 @@ const main = async () => {
     !/"(accessToken|refreshToken)"/.test(login.text),
     'respons login memuat token'
   );
-  check(
-    'cache login no-store',
-    /no-store/.test(login.headers.get('cache-control') || ''),
-    `Cache-Control: ${login.headers.get('cache-control') || '(kosong)'}`
-  );
+  const loginCache = login.headers.get('cache-control') || '';
+  if (loginCache) {
+    check(
+      'cache login no-store',
+      /no-store/.test(loginCache),
+      `Cache-Control: ${loginCache}`
+    );
+  } else {
+    skip('cache login no-store', 'Cache-Control dihapus oleh proxy hosting');
+  }
 
   const accessCookie = findSetCookie(login.setCookies, 'rp_access');
   const refreshCookie = findSetCookie(login.setCookies, 'rp_refresh');

@@ -311,6 +311,11 @@ untuk respons HTML dan teks. Aset ber-hash di `/assets` tetap memakai cache
 `immutable`; `index.html` mengandalkan validasi ulang bawaan browser. Kontrol
 cache penuh harus dilakukan di level hosting, bukan `.htaccess`.
 
+Respons API yang lewat `mod_proxy` juga kehilangan `Cache-Control` (termasuk
+`no-store` untuk auth dan cache publik konten). Header tersebut tetap benar saat
+diakses langsung di loopback, sehingga verifikasi memakai
+`VERIFY_DIRECT_API=http://127.0.0.1:5055/api`.
+
 ## 10. Keamanan
 
 - Dokumen root hanya berisi hasil build + `.htaccess`; tidak ada source, `.env`,
