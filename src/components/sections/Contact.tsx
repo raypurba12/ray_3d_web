@@ -101,11 +101,11 @@ const Contact = () => {
   return (
     <div className="flex flex-col gap-6 overflow-hidden sm:gap-8 xl:mt-8 xl:flex-row items-stretch relative">
       {/* Ambient Fluid Background */}
-      <div className="absolute inset-0 -z-10 opacity-60">
+      <DeferredCanvas className="absolute inset-0 -z-10 opacity-60" rootMargin="0px">
         <Suspense fallback={null}>
           <FluidGradientCanvas />
         </Suspense>
-      </div>
+      </DeferredCanvas>
 
       {/* Contact Form Card */}
       <motion.div

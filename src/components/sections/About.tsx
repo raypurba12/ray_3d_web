@@ -15,6 +15,7 @@ import { fadeIn } from "../../utils/motion";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 import { Header } from "../atoms/Header";
+import { DeferredCanvas } from "../canvas/DeferredCanvas";
 
 const AmbientGeometryCanvas = lazy(
   () => import("../canvas/AmbientGeometry")
@@ -56,9 +57,11 @@ const About = () => {
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
       >
-        <Suspense fallback={null}>
-          <AmbientGeometryCanvas />
-        </Suspense>
+        <DeferredCanvas className="h-full w-full" rootMargin="0px">
+          <Suspense fallback={null}>
+            <AmbientGeometryCanvas />
+          </Suspense>
+        </DeferredCanvas>
       </div>
 
       <Header useMotion={true} {...config.sections.about} />
