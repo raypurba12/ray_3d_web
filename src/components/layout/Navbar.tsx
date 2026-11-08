@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { motion, useScroll, useSpring } from "framer-motion";
-import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { navLinks } from "../../constants";
 import { config } from "../../constants/config";
 import { usePortfolioContent } from "../../features/portfolio/content-context";
 
 const Navbar = () => {
   const { gallery } = usePortfolioContent();
-  const { pathname } = useLocation();
-  const homePrefix = pathname === "/" ? "" : "/";
-  const sectionHref = (id: string) => `${homePrefix}#${id}`;
+  const sectionTo = (id: string) => `/#${id}`;
   const links =
     gallery.length > 0
       ? navLinks
@@ -97,40 +95,40 @@ const Navbar = () => {
 
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 sm:px-16">
         {/* Brand Monogram */}
-        <a href={`${homePrefix}#top`} className="flex items-center gap-2 group">
+        <Link to="/#top" className="flex items-center gap-2 group">
           <div className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center font-display font-bold text-white text-base group-hover:border-acid transition-colors">
             R<span className="text-acid">.</span>
           </div>
           <span className="font-display font-bold text-base tracking-tight text-white group-hover:text-acid transition-colors">
             {config.html.fullName}
           </span>
-        </a>
+        </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="hidden lg:flex items-center gap-1 rounded-full px-4 py-1.5 bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
           {links.map((nav) => (
-            <a
+            <Link
               key={nav.id}
-              href={sectionHref(nav.id)}
+              to={sectionTo(nav.id)}
               className={`px-4 py-1.5 rounded-full text-xs font-mono tracking-wider uppercase transition-all duration-200 ${active === nav.id
                   ? "bg-white/10 text-white font-medium border border-white/15"
                   : "text-white/60 hover:text-white"
                 }`}
             >
               {nav.title}
-            </a>
+            </Link>
           ))}
         </nav>
 
         {/* Contact CTA */}
         <div className="hidden lg:flex items-center gap-3">
-          <a
-            href={sectionHref("contact")}
+          <Link
+            to={sectionTo("contact")}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-wider text-white/90 bg-white/[0.05] border border-white/10 hover:border-acid hover:text-acid transition-all duration-200"
           >
             <span>Let's Talk</span>
             <ArrowUpRight size={13} />
-          </a>
+          </Link>
         </div>
 
         {/* Mobile Hamburger Toggle */}
@@ -155,9 +153,9 @@ const Navbar = () => {
               className="absolute right-6 top-16 z-50 w-60 rounded-2xl bg-[#121216]/95 border border-white/10 backdrop-blur-2xl p-3 shadow-2xl flex flex-col gap-1"
             >
               {links.map((nav) => (
-                <a
+                <Link
                   key={nav.id}
-                  href={sectionHref(nav.id)}
+                  to={sectionTo(nav.id)}
                   onClick={() => setToggle(false)}
                   className={`px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider transition-colors ${active === nav.id
                       ? "bg-white/10 text-acid font-semibold"
@@ -165,16 +163,16 @@ const Navbar = () => {
                     }`}
                 >
                   {nav.title}
-                </a>
+                </Link>
               ))}
               <hr className="border-white/10 my-1" />
-              <a
-                href={sectionHref("contact")}
+              <Link
+                to={sectionTo("contact")}
                 onClick={() => setToggle(false)}
                 className="px-3 py-2.5 rounded-lg font-mono text-xs uppercase tracking-wider text-center bg-acid text-black font-semibold"
               >
                 Let's Talk
-              </a>
+              </Link>
             </div>
           )}
         </div>

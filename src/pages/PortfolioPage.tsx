@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { MotionConfig } from "framer-motion";
+import { useLocation } from "react-router-dom";
 import Lenis from "lenis";
 
 import {
@@ -21,7 +22,7 @@ import { config } from "../constants/config";
 import { ContentProvider } from "../features/portfolio/ContentProvider";
 import { usePortfolioContent } from "../features/portfolio/content-context";
 import { trackPageView } from "../features/portfolio/tracking";
-import { registerLenis, scrollToId } from "../utils/scrollTo";
+import { registerLenis, scrollToId, scrollToTop } from "../utils/scrollTo";
 
 const StarsCanvas = lazy(() => import("../components/canvas/Stars"));
 
@@ -46,6 +47,7 @@ const PortfolioFooter = () => {
 
 const PortfolioPage = () => {
   const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     trackPageView();
@@ -78,6 +80,17 @@ const PortfolioPage = () => {
       registerLenis(null);
     };
   }, []);
+
+  // The browser's native fragment scroll runs before React renders the
+  // sections, so honor the hash ourselves once the page (and Lenis) is ready.
+  useEffect(() => {
+    const id = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+    const timer = setTimeout(() => {
+      if (id) scrollToId(id);
+      else scrollToTop();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [location]);
 
   useEffect(() => {
     document.title = config.html.title;
