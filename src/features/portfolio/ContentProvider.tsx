@@ -29,7 +29,7 @@ import {
 import { DEFAULT_SITE_CONTENT, resolveSiteContent } from "./site-content";
 
 const CACHE_KEY = "rp_content_v1";
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 
 type CachedPayload = {
   version: number;

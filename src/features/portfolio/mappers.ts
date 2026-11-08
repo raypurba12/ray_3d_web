@@ -13,7 +13,6 @@ import {
   threejs,
   typescript,
 } from "../../assets";
-import logo from "../../assets/logo.png";
 import { resolveAssetUrl } from "../../lib/api";
 import type {
   TExperience,
@@ -74,6 +73,51 @@ const BUNDLED_TECH_ICONS: Record<string, string> = {
 const normalizeName = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
+const escapeXml = (value: string) =>
+  value.replace(/[<>&'"]/g, (char) => {
+    switch (char) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "&":
+        return "&amp;";
+      case "'":
+        return "&apos;";
+      default:
+        return "&quot;";
+    }
+  });
+
+// Custom technologies without a bundled/uploaded icon get a deterministic
+// initials badge instead of an unrelated placeholder image.
+const initialsIcon = (name: string) => {
+  const letters =
+    name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word.charAt(0))
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "?";
+
+  let hash = 0;
+  for (const char of name) {
+    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  }
+  const hue = hash % 360;
+  const fontSize = letters.length > 1 ? 46 : 56;
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">` +
+    `<rect width="128" height="128" rx="28" fill="hsl(${hue},55%,15%)"/>` +
+    `<rect x="5" y="5" width="118" height="118" rx="24" fill="none" stroke="hsl(${hue},85%,62%)" stroke-opacity="0.4" stroke-width="3"/>` +
+    `<text x="64" y="66" font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700" fill="hsl(${hue},90%,68%)" text-anchor="middle" dominant-baseline="central">${escapeXml(letters)}</text>` +
+    `</svg>`;
+
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+};
+
 const resolveTechnologyIcon = (technology: PublicTechnology) => {
   const icon = technology.icon.trim();
 
@@ -81,7 +125,11 @@ const resolveTechnologyIcon = (technology: PublicTechnology) => {
     return resolveAssetUrl(icon);
   }
 
-  return BUNDLED_TECH_ICONS[normalizeName(technology.name)] ?? logo;
+  return (
+    BUNDLED_TECH_ICONS[normalizeName(technology.name)] ??
+    BUNDLED_TECH_ICONS[normalizeName(icon)] ??
+    initialsIcon(technology.name)
+  );
 };
 
 const byOrder = <T extends { order?: number }>(a: T, b: T) =>
@@ -101,6 +149,7 @@ export const mapTechnologies = (
 ): TTechnology[] => technologies.map(mapTechnology).sort(byOrder);
 
 export const mapProject = (project: PublicProject): TProject => ({
+  id: project.id,
   name: project.title,
   description: project.description,
   tags: project.tags.map((tag) => ({
@@ -114,6 +163,7 @@ export const mapProject = (project: PublicProject): TProject => ({
   metric: project.metric ?? undefined,
   featured: project.featured,
   order: project.order,
+  technologies: mapTechnologies(project.technologies ?? []),
   images: project.images?.map((image) => ({
     id: image.id,
     image: resolveAssetUrl(image.image),

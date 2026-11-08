@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -16,7 +17,7 @@ import Tilt from "react-parallax-tilt";
 import { github } from "../../assets";
 import { fadeIn } from "../../utils/motion";
 import { parseVideoSource, type VideoSource } from "../../lib/video";
-import { TProject, TProjectImage } from "../../types";
+import { TProject, TProjectImage, TTechnology } from "../../types";
 
 const lightboxButtonClass =
   "absolute z-10 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/80 backdrop-blur transition hover:bg-white/10 hover:text-white";
@@ -230,7 +231,39 @@ const ProjectTags = ({ tags }: { tags: TProject["tags"] }) => (
   </div>
 );
 
-const ProjectDetailModal = ({
+const TechChips = ({
+  technologies,
+  compact = false,
+}: {
+  technologies: TTechnology[];
+  compact?: boolean;
+}) => (
+  <div className="flex flex-wrap gap-1.5">
+    {technologies.map((tech) => (
+      <span
+        key={tech.name}
+        className={`inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] font-medium text-white/85 transition hover:border-acid/40 hover:text-white ${
+          compact
+            ? "gap-1.5 py-1 pl-1 pr-2.5 text-[11px]"
+            : "gap-2 py-1.5 pl-1.5 pr-3.5 text-xs"
+        }`}
+      >
+        <img
+          src={tech.icon}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={`shrink-0 rounded-full object-contain ${
+            compact ? "h-[18px] w-[18px]" : "h-6 w-6"
+          }`}
+        />
+        {tech.name}
+      </span>
+    ))}
+  </div>
+);
+
+export const ProjectDetailModal = ({
   project,
   onClose,
 }: {
@@ -240,6 +273,7 @@ const ProjectDetailModal = ({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
   const screenshots = project.images ?? [];
+  const technologies = project.technologies ?? [];
   const videoSource = project.videoLink
     ? parseVideoSource(project.videoLink)
     : null;
@@ -248,14 +282,20 @@ const ProjectDetailModal = ({
   useEscape(lightboxIndex === null && !videoOpen, onClose);
 
   return createPortal(
-    <div
+    <motion.div
       role="dialog"
       aria-modal="true"
       aria-label={`${project.name} project details`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
       className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black/90 p-4 backdrop-blur-md sm:p-8"
       onClick={onClose}
     >
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 28, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
         className="relative max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#0f0f13] shadow-2xl sm:max-h-[calc(100vh-4rem)]"
         onClick={(event) => event.stopPropagation()}
       >
@@ -271,13 +311,23 @@ const ProjectDetailModal = ({
         </div>
 
         {project.image && (
-          <img
-            src={project.image}
-            alt={project.name}
-            loading="lazy"
-            decoding="async"
-            className="max-h-[45vh] w-full object-cover"
-          />
+          <div className="relative w-full overflow-hidden bg-black/40">
+            <img
+              src={project.image}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+            />
+            <img
+              src={project.image}
+              alt={project.name}
+              loading="lazy"
+              decoding="async"
+              className="relative block max-h-[45vh] w-full object-contain"
+            />
+          </div>
         )}
 
         <div className="p-6 sm:p-8">
@@ -304,12 +354,23 @@ const ProjectDetailModal = ({
             {project.description}
           </p>
 
-          <div className="mt-6">
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
-              Tech stack
-            </p>
-            <ProjectTags tags={project.tags} />
-          </div>
+          {technologies.length > 0 && (
+            <div className="mt-6">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+                Tech stack
+              </p>
+              <TechChips technologies={technologies} />
+            </div>
+          )}
+
+          {project.tags.length > 0 && (
+            <div className="mt-6">
+              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-white/40">
+                Tags
+              </p>
+              <ProjectTags tags={project.tags} />
+            </div>
+          )}
 
           {screenshots.length > 0 && (
             <div className="mt-6">
@@ -330,7 +391,7 @@ const ProjectDetailModal = ({
                       alt={shot.caption || `${project.name} screenshot ${index + 1}`}
                       loading="lazy"
                       decoding="async"
-                      className="h-20 w-full object-cover sm:h-24"
+                      className="h-20 w-full bg-white/[0.03] object-contain p-1 sm:h-24"
                     />
                   </button>
                 ))}
@@ -383,7 +444,7 @@ const ProjectDetailModal = ({
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {lightboxIndex !== null && (
         <ScreenshotLightbox
@@ -402,7 +463,7 @@ const ProjectDetailModal = ({
           onClose={() => setVideoOpen(false)}
         />
       )}
-    </div>,
+    </motion.div>,
     document.body
   );
 };
@@ -422,10 +483,11 @@ export const ProjectCard: React.FC<{ index: number } & TProject> = ({
     metric,
     images,
     featured,
+    technologies = [],
   } = project;
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [videoOpen, setVideoOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const navigate = useNavigate();
   const screenshots = images ?? [];
   const videoSource = videoLink ? parseVideoSource(videoLink) : null;
 
@@ -449,13 +511,23 @@ export const ProjectCard: React.FC<{ index: number } & TProject> = ({
         {/* Visual Preview / Thumbnail Area */}
         <div className="relative h-[220px] sm:h-[240px] w-full overflow-hidden bg-black/40">
           {image ? (
-            <img
-              src={image}
-              alt={name}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-            />
+            <>
+              <img
+                src={image}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+              />
+              <img
+                src={image}
+                alt={name}
+                loading="lazy"
+                decoding="async"
+                className="relative h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-105"
+              />
+            </>
           ) : (
             <div className="h-full w-full bg-gradient-to-br from-white/[0.08] to-transparent" />
           )}
@@ -543,13 +615,18 @@ export const ProjectCard: React.FC<{ index: number } & TProject> = ({
           </div>
 
           <div className="mt-auto">
-            <div className="mt-5 pt-4 border-t border-white/5">
-              <ProjectTags tags={tags} />
-            </div>
+            {(technologies.length > 0 || tags.length > 0) && (
+              <div className="mt-5 space-y-3 border-t border-white/5 pt-4">
+                {technologies.length > 0 && (
+                  <TechChips technologies={technologies} compact />
+                )}
+                {tags.length > 0 && <ProjectTags tags={tags} />}
+              </div>
+            )}
 
             <button
               type="button"
-              onClick={() => setDetailOpen(true)}
+              onClick={() => navigate(`/projects/${project.id}`)}
               className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white/80 transition hover:border-acid/50 hover:text-acid"
             >
               <Eye size={14} />
@@ -577,12 +654,6 @@ export const ProjectCard: React.FC<{ index: number } & TProject> = ({
         />
       )}
 
-      {detailOpen && (
-        <ProjectDetailModal
-          project={project}
-          onClose={() => setDetailOpen(false)}
-        />
-      )}
     </motion.div>
   );
 };

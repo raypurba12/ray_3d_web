@@ -92,6 +92,11 @@ export const fetchProfile = () =>
 export const fetchProjects = () =>
   request<PublicProject[]>("/projects", { auth: false });
 
+export const fetchProject = (id: string) =>
+  request<PublicProject>(`/projects/${id}`, { auth: false });
+
+export { mapProject } from "./mappers";
+
 export const fetchTechnologies = () =>
   request<PublicTechnology[]>("/technologies", { auth: false });
 

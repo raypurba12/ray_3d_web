@@ -29,6 +29,7 @@ export type TProjectImage = {
 };
 
 export type TProject = {
+  id: string;
   description: string;
   tags: {
     name: string;
@@ -40,6 +41,7 @@ export type TProject = {
   videoLink?: string;
   metric?: string;
   images?: TProjectImage[];
+  technologies?: TTechnology[];
   featured?: boolean;
   order?: number;
 } & Required<Pick<TCommonProps, "name">>;

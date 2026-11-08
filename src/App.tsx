@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./features/admin/auth/ProtectedRoute";
 import PortfolioPage from "./pages/PortfolioPage";
 
 const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
+const ProjectDetailPage = lazy(() => import("./pages/ProjectDetailPage"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminLoginPage = lazy(() => import("./pages/admin/AdminLoginPage"));
 const AccountPage = lazy(() => import("./pages/admin/AccountPage"));
@@ -41,6 +42,7 @@ const App = () => (
     <Routes>
       <Route path="/" element={<PortfolioPage />} />
       <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/projects/:id" element={<ProjectDetailPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<ProtectedRoute />}>
         <Route element={<AdminLayout />}>
